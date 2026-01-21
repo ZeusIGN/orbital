@@ -2,7 +2,9 @@ package net.renars.orbital.data;
 
 import net.renars.orbital.utils.Result;
 
+import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -34,6 +36,11 @@ public class DataLoader<V extends Entity> {
             var id = entry.getKey();
             var extractor = entry.getValue();
             var value = extractor.apply(dataHolder, id);
+            var defaultExtractor = validator.defaulters.get(id);
+            if (value == null && defaultExtractor != null) {
+                defaultExtractor.accept(dataHolder, id);
+                continue;
+            }
             if (value == null) return Result.error("Missing field: " + id);
         }
         return Result.ok();
@@ -62,10 +69,22 @@ public class DataLoader<V extends Entity> {
 
     public class Validator {
         final LinkedHashMap<String, BiFunction<DataHolder, String, Object>> fields = new LinkedHashMap<>();
+        final HashMap<String, BiConsumer<DataHolder, String>> defaulters = new HashMap<>();
 
         public Validator add(String id, BiFunction<DataHolder, String, Object> extractor) {
-            fields.put(id, extractor);
+            put(id, extractor, null);
             return this;
+        }
+
+        public Validator withDefault(String id, BiFunction<DataHolder, String, Object> extractor, BiConsumer<DataHolder, String> defaulter) {
+            put(id, extractor, defaulter);
+            return this;
+        }
+
+        private void put(String id, BiFunction<DataHolder, String, Object> extractor, BiConsumer<DataHolder, String> defaulter) {
+            if (fields.containsKey(id)) throw new IllegalStateException("Field already defined: " + id);
+            fields.put(id, extractor);
+            if (defaulter != null) defaulters.put(id, defaulter);
         }
 
         public DataLoader<V> build() {

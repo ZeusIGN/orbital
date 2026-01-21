@@ -40,7 +40,7 @@ public abstract class Repository<V extends Entity> {
                 continue;
             }
             var value = entity.value();
-            storage.put(value.id(), value);
+            save(value.id(), value);
         }
     }
 

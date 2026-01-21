@@ -10,6 +10,6 @@ import java.lang.annotation.Target;
  * --Renars
  */
 @Retention(RetentionPolicy.SOURCE)
-@Target(ElementType.PARAMETER)
+@Target({ElementType.PARAMETER, ElementType.FIELD})
 public @interface Unique {
 }
