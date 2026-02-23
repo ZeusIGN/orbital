@@ -21,6 +21,7 @@ public class TeamScheme implements RepoScheme<Team> {
                     var details = Team.UserDetails.from(DataHolder.from(entry.getValue().m()));
                     teamMembers.put(userID, details);
                 }
+                if (teamMembers.isEmpty()) return null;
                 return new Team(id, name).addMembers(teamMembers);
             })
             .validator()

@@ -20,5 +20,8 @@ public class Orbital {
         Dotenv dotenv = Dotenv.load();
         System.setProperty("spring.cloud.aws.credentials.access-key", dotenv.get("AWS_ACCESS_KEY"));
         System.setProperty("spring.cloud.aws.credentials.secret-key", dotenv.get("AWS_SECRET_KEY"));
+        System.setProperty("jwt.secret", dotenv.get("JWT_SECRET"));
+        System.setProperty("jwt.expiration", dotenv.get("JWT_EXPIRATION"));
+        System.setProperty("jwt.refresh-token.expiration", dotenv.get("JWT_REFRESH_EXPIRATION"));
     }
 }

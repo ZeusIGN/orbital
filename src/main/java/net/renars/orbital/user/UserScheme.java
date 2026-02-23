@@ -5,6 +5,8 @@ import net.renars.orbital.data.DataLoader;
 import net.renars.orbital.utils.RepoScheme;
 
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
 public class UserScheme implements RepoScheme<User> {
     static final String NAME = "Users";
@@ -16,8 +18,8 @@ public class UserScheme implements RepoScheme<User> {
                 var email = data.getString("email");
                 var password = data.getString("password");
                 var displayName = data.getString("displayName");
-                var teamID = data.getLong("teamID");
-                var user = new User(id, signUpStamp, email, password, username, displayName, teamID);
+                var teams = data.getList("teams", DataHolder::toLong);
+                var user = new User(id, signUpStamp, email, password, username, displayName, Set.copyOf(teams));
                 user.loadChildren(data);
                 return user;
             })
@@ -28,7 +30,7 @@ public class UserScheme implements RepoScheme<User> {
             .add("email", DataHolder::getString)
             .add("password", DataHolder::getString)
             .add("displayName", DataHolder::getString)
-            .add("teamID", DataHolder::getLong)
+            .withDefault("teams", DataHolder::getLong, (holder, id) -> holder.putList(id, new ArrayList<>()))
             .withDefault("children", DataHolder::getList, (holder, id) -> holder.putList(id, new ArrayList<>()))
             .build();
 

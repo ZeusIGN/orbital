@@ -48,6 +48,14 @@ public class DataHolder {
         return this;
     }
 
+    public <T> DataHolder putList(String key, List<T> value, Function<T, AttributeValue> mapper) {
+        var attrList = value.stream()
+                .map(mapper)
+                .toList();
+        data.put(key, builder().l(attrList).build());
+        return this;
+    }
+
     public DataHolder putMap(String key, Map<String, AttributeValue> value) {
         data.put(key, builder().m(value).build());
         return this;
@@ -202,6 +210,6 @@ public class DataHolder {
     }
 
     public static DataHolder from(Map<String, AttributeValue> map) {
-        return new DataHolder(map);
+        return new DataHolder(new HashMap<>(map));
     }
 }

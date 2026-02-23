@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class TeamRepository extends Repository<Team> {
@@ -16,17 +17,19 @@ public class TeamRepository extends Repository<Team> {
         this.users = repository;
     }
 
-    public Optional<Team> byID(long id) {
-        return get(id);
+    public Team createTeam(String name, User owner) {
+        var team = new Team(nextID(), name);
+        team.addMember(owner, team.getRole("manager"));
+        loadToStorage(team.id(), team);
+        saveToDB(team);
+        return team;
     }
 
-    public Optional<Team> fromUserID(long id) {
-        var user = users.byID(id).orElse(null);
-        if (user == null || !user.inTeam()) return Optional.empty();
-        return fromUser(user);
+    public Optional<Team> byID(long teamID) {
+        return get(teamID);
     }
 
-    public Optional<Team> fromUser(User user) {
-        return user.inTeam() ? get(user.getTeamID()) : Optional.empty();
+    public Set<Team> fromUser(User user) {
+        return user.inTeam() ? user.getActiveTeams(this) : Set.of();
     }
 }

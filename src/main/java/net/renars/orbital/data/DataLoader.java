@@ -51,6 +51,7 @@ public class DataLoader<V extends Entity> {
         if (validity.isError()) return Result.error(validity.errorMsg());
         if (deserializer == null) return Result.error("Deserializer not defined");
         V entity = deserializer.create(dataHolder);
+        if (entity == null) return Result.error("Failed to create entity from data!");
         return Result.ok(entity);
     }
 

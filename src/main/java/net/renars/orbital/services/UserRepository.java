@@ -10,6 +10,7 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class UserRepository extends Repository<User> {
@@ -34,7 +35,7 @@ public class UserRepository extends Repository<User> {
                 hashedPassword,
                 username,
                 displayName,
-                -1
+                Set.of()
         );
         loadToStorage(user.id(), user);
         saveToDB(user);

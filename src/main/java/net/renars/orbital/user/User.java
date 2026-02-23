@@ -8,9 +8,13 @@ import net.renars.orbital.services.TeamRepository;
 import net.renars.orbital.team.Team;
 import net.renars.orbital.utils.Serializable;
 import net.renars.orbital.utils.Unique;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class User implements Entity {
     @Unique
@@ -18,7 +22,7 @@ public class User implements Entity {
     @Getter
     private final long signUpStamp;
     @Getter
-    private long teamID;
+    private Set<Long> activeTeams;
     @Getter
     @Unique
     String email;
@@ -33,14 +37,14 @@ public class User implements Entity {
     @Getter
     WebRole webRole = WebRole.USER;
 
-    public User(long id, long signUpStamp, String email, String password, String username, String displayName, long teamID) {
+    public User(long id, long signUpStamp, String email, String password, String username, String displayName, Set<Long> activeTeams) {
         this.id = id;
         this.signUpStamp = signUpStamp;
         this.email = email;
         this.password = password;
         this.username = username;
         this.displayName = displayName;
-        this.teamID = teamID;
+        this.activeTeams = new HashSet<>(activeTeams);
     }
 
     public Date signUpDate() {
@@ -51,17 +55,21 @@ public class User implements Entity {
         return id;
     }
 
-    public void updateTeamID(long id) {
-        this.teamID = id;
+    public void addTeam(long id) {
+        activeTeams.add(id);
     }
 
     public boolean inTeam() {
-        return teamID != -1;
+        return !activeTeams.isEmpty();
     }
 
-    public Optional<Team> getCurrentTeam(TeamRepository repository) {
-        if (!inTeam()) return Optional.empty();
-        return repository.get(teamID);
+    public Set<Team> getActiveTeams(TeamRepository repository) {
+        if (!inTeam()) return Set.of();
+        return activeTeams.stream()
+                .map(repository::byID)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(Collectors.toSet());
     }
 
     @Override
@@ -73,7 +81,7 @@ public class User implements Entity {
         compound.putString("password", password);
         compound.putString("username", username);
         compound.putString("displayName", displayName);
-        compound.putLong("teamID", teamID);
+        compound.putList("activeTeams", activeTeams.stream().toList(), (id) -> AttributeValue.builder().n(id + "").build());
         DataHolder children = new DataHolder();
         for (Serializable child : children()) {
             children.putCompound(child.getClass().getSimpleName(), child.serialize());
@@ -82,7 +90,7 @@ public class User implements Entity {
         return compound;
     }
 
-    enum WebRole {
+    public enum WebRole {
         VIEWER,
         USER,
         ADMIN

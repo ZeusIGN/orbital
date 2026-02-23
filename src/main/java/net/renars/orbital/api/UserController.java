@@ -1,9 +1,14 @@
 package net.renars.orbital.api;
 
+import net.renars.orbital.services.JwtService;
 import net.renars.orbital.services.UserRepository;
+import net.renars.orbital.services.WrappedUserService;
 import net.renars.orbital.utils.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.stream.Collectors;
@@ -16,10 +21,16 @@ import java.util.stream.Collectors;
 @RequestMapping("/user")
 public class UserController implements Controller {
     private final UserRepository userService;
+    private final JwtService jwtService;
+    private final AuthenticationManager authenticationManager;
+    private final WrappedUserService userDetailsService;
 
     @Autowired
-    public UserController(UserRepository userService) {
+    public UserController(UserRepository userService, JwtService jwtService, AuthenticationManager authenticationManager, WrappedUserService userDetailsService) {
         this.userService = userService;
+        this.jwtService = jwtService;
+        this.authenticationManager = authenticationManager;
+        this.userDetailsService = userDetailsService;
     }
 
     @PostMapping("/register")
@@ -42,16 +53,64 @@ public class UserController implements Controller {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> createUser(
+    public ResponseEntity<LoginResponse> login(
             @RequestBody LoginRequest request
     ) {
         var username = request.username();
         var password = request.password();
         if (username.isBlank()) return LoginResponse.badRequest("Username cannot be blank");
         if (password.isBlank()) return LoginResponse.badRequest("Password cannot be blank");
-        if (!userService.isValid(username, password))
+
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(username, password)
+            );
+        } catch (Exception e) {
             return LoginResponse.badRequest("Invalid username or password");
-        return LoginResponse.ok("dummy-token-%s".formatted(username));
+        }
+
+        var userDetails = userDetailsService.loadUserByUsername(username);
+        var jwtToken = jwtService.generateToken(userDetails);
+        var refreshToken = jwtService.generateRefreshToken(userDetails);
+
+        return LoginResponse.ok(jwtToken, refreshToken);
+    }
+
+    @PostMapping("/refresh-token")
+    public ResponseEntity<LoginResponse> refreshToken(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader
+    ) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return LoginResponse.badRequest("Invalid Refresh Token");
+        }
+        final var refreshToken = authHeader.substring(7);
+        final String username;
+        try {
+            username = jwtService.extractUsername(refreshToken);
+        } catch (Exception e) {
+            return LoginResponse.badRequest("Invalid Refresh Token");
+        }
+
+        if (username == null) return LoginResponse.badRequest("Invalid Refresh Token");
+        var userDetails = userDetailsService.loadUserByUsername(username);
+        if (!jwtService.isTokenValid(refreshToken, userDetails))
+            return LoginResponse.badRequest("Invalid Refresh Token");
+        var accessToken = jwtService.generateToken(userDetails);
+        return LoginResponse.ok(accessToken, refreshToken);
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<String> getMe() {
+        var userOpt = getAuthUser();
+        if (userOpt.isEmpty()) return badRequest("Unauthorized");
+        var user = userOpt.get();
+        return ok("ID: %d\nUsername: %s\nDisplay Name: %s\nEmail: %s\nIn Team: %s".formatted(
+                user.id(),
+                user.getUsername(),
+                user.getDisplayName(),
+                user.getEmail(),
+                user.inTeam() ? "No" : "Yes"
+        ));
     }
 
     // debug --Renars
@@ -67,19 +126,19 @@ public class UserController implements Controller {
             String username,
             String password
     ) {
-
     }
 
     public record LoginResponse(
-            String token,
+            String accessToken,
+            String refreshToken,
             String errorMessage
     ) {
         private static ResponseEntity<LoginResponse> badRequest(String message) {
-            return ResponseEntity.badRequest().body(new LoginResponse(null, message));
+            return ResponseEntity.badRequest().body(new LoginResponse(null, null, message));
         }
 
-        private static ResponseEntity<LoginResponse> ok(String token) {
-            return ResponseEntity.ok(new LoginResponse(token, null));
+        private static ResponseEntity<LoginResponse> ok(String accessToken, String refreshToken) {
+            return ResponseEntity.ok(new LoginResponse(accessToken, refreshToken, null));
         }
     }
 
@@ -91,4 +150,3 @@ public class UserController implements Controller {
     ) {
     }
 }
-

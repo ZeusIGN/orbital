@@ -1,5 +1,6 @@
 package net.renars.orbital.team;
 
+import lombok.Getter;
 import net.renars.orbital.data.DataHolder;
 import net.renars.orbital.data.Entity;
 import net.renars.orbital.services.UserRepository;
@@ -12,17 +13,23 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class Team implements Entity {
+    @Getter
     private final long id;
     private final HashMap<Long, UserDetails> members = new HashMap<>();
     private final HashMap<String, Role> roles = new HashMap<>() {{
-            put("manager", new Role("manager", new Permissions(true, true)));
-            put("member", new Role("member", new Permissions(false, false)));
+        put("manager", new Role("manager", new Permissions(true, true)));
+        put("member", new Role("member", new Permissions(false, false)));
     }};
+    @Getter
     private String name = "";
 
     public Team(long id, String name) {
         this.id = id;
         this.name = name;
+    }
+
+    public Role getRole(String name) {
+        return roles.get(name);
     }
 
     public boolean roleExists(String name) {
@@ -41,12 +48,13 @@ public class Team implements Entity {
                 .collect(Collectors.toList());
     }
 
-    public void addMember(long id, UserDetails details) {
-        members.put(id, details);
+    public void addMember(User user, UserDetails details) {
+        members.put(user.id(), details);
+        user.addTeam(id);
     }
 
-    public void addMember(long id, Role role) {
-        addMember(id, new UserDetails(role, null));
+    public void addMember(User user, Role role) {
+        addMember(user, new UserDetails(role, null));
     }
 
     public void overridePermissions(long id, Permissions permissions) {
@@ -108,13 +116,13 @@ public class Team implements Entity {
         public DataHolder serialize() {
             var holder = new DataHolder();
             holder.putCompound("role", role.serialize());
-            holder.putCompound("permissions", permissions.serialize());
+            if (permissions != null) holder.putCompound("permissions", permissions.serialize());
             return holder;
         }
 
         public static UserDetails from(DataHolder holder) {
             var role = Role.from(holder.getCompound("role"));
-            var permissions = Permissions.from(holder.getCompound("permissions"));
+            var permissions = holder.containsKey("permissions") ? Permissions.from(holder.getCompound("permissions")) : null;
             return new UserDetails(role, permissions);
         }
     }
