@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.stream.Collectors;
 
 /**
- * Primārais (publiskais) API.
+ * Primārais user (publiskais) API.
  * --Renars
  */
 @RestController
@@ -54,6 +54,7 @@ public class UserController implements Controller {
         return LoginResponse.ok("dummy-token-%s".formatted(username));
     }
 
+    // debug --Renars
     @GetMapping("/users")
     public ResponseEntity<String> getUsers() {
         return ok(userService.getAllUsers().stream()

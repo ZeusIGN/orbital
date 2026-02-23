@@ -36,7 +36,7 @@ public class UserRepository extends Repository<User> {
                 displayName,
                 -1
         );
-        save(user.id(), user);
+        loadToStorage(user.id(), user);
         saveToDB(user);
         return Result.ok(user);
     }
@@ -51,7 +51,7 @@ public class UserRepository extends Repository<User> {
     // priekšs dynamoDB load --Renars
     public void addUser(User user) {
         if (containsKey(user.id())) return;
-        save(user.id(), user);
+        loadToStorage(user.id(), user);
     }
 
     public void removeUser(long id) {

@@ -24,14 +24,14 @@ public class SecurityConfig {
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) {
-            http.csrf(AbstractHttpConfigurer::disable)
-                    .authorizeHttpRequests((requests) -> requests
-                            .requestMatchers("/user/*")
-                            .permitAll()
-                            .anyRequest().authenticated()
-                    )
-                    .sessionManagement((conf) -> conf.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                    .userDetailsService(userDetailsService);
-            return http.build();
+        http.csrf(AbstractHttpConfigurer::disable);
+        http.authorizeHttpRequests((requests) -> requests
+                .requestMatchers("/user/*")
+                .permitAll()
+                .anyRequest().authenticated()
+        );
+        http.sessionManagement((conf) -> conf.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+        http.userDetailsService(userDetailsService);
+        return http.build();
     }
 }

@@ -23,7 +23,7 @@ public class TeamController implements Controller {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<String> createUser(
+    public ResponseEntity<String> createTeam(
             @RequestBody Void request
     ) {
         return ok("");

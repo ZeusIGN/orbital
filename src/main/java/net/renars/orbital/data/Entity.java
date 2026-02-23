@@ -12,6 +12,5 @@ public interface Entity extends Serializable {
     }
 
     default void loadChildren(DataHolder dataHolder) {
-
     }
 }

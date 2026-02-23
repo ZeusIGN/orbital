@@ -1,43 +1,66 @@
 package net.renars.orbital.team;
 
-import net.renars.orbital.services.UserRepository;
-import net.renars.orbital.user.User;
 import net.renars.orbital.data.DataHolder;
 import net.renars.orbital.data.Entity;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import net.renars.orbital.services.UserRepository;
+import net.renars.orbital.user.User;
+import net.renars.orbital.utils.Serializable;
 
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class Team implements Entity {
     private final long id;
-    private final List<Long> members = new ArrayList<>();
+    private final HashMap<Long, UserDetails> members = new HashMap<>();
+    private final HashMap<String, Role> roles = new HashMap<>() {{
+            put("manager", new Role("manager", new Permissions(true, true)));
+            put("member", new Role("member", new Permissions(false, false)));
+    }};
+    private String name = "";
 
-    public Team(long id) {
+    public Team(long id, String name) {
         this.id = id;
+        this.name = name;
+    }
+
+    public boolean roleExists(String name) {
+        return roles.containsKey(name);
+    }
+
+    public void addRole(String name, Permissions permissions) {
+        roles.put(name, new Role(name, permissions));
     }
 
     public List<User> teamMembers(UserRepository userRepository) {
-        return members.stream()
+        return members.keySet().stream()
                 .map(userRepository::byID)
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .collect(Collectors.toList());
     }
 
-    public void addMember(long id) {
-        members.add(id);
+    public void addMember(long id, UserDetails details) {
+        members.put(id, details);
     }
 
-    public Team addMembers(List<Long> ids) {
-        members.addAll(ids);
+    public void addMember(long id, Role role) {
+        addMember(id, new UserDetails(role, null));
+    }
+
+    public void overridePermissions(long id, Permissions permissions) {
+        var details = members.get(id);
+        if (details != null) members.put(id, new UserDetails(details.role(), permissions));
+    }
+
+    public Team addMembers(HashMap<Long, UserDetails> users) {
+        members.putAll(users);
         return this;
     }
 
     public boolean isTeamMember(long id) {
-        return members.contains(id);
+        return members.containsKey(id);
     }
 
     public boolean isTeamMember(User user) {
@@ -53,9 +76,65 @@ public class Team implements Entity {
     public DataHolder serialize() {
         var compound = new DataHolder();
         compound.putLong("id", id);
-        compound.putList("teamMembers", members.stream()
-                .map((val) -> AttributeValue.builder().n(val + "").build())
-                .collect(Collectors.toList()));
+        compound.putString("name", name);
+        var membersCompound = new DataHolder();
+        for (var entry : members.entrySet()) {
+            var id = entry.getKey();
+            var details = entry.getValue();
+            membersCompound.putCompound(String.valueOf(id), details.serialize());
+        }
+        compound.putCompound("members", membersCompound);
         return compound;
+    }
+
+    public record Role(String name, Permissions permissions) implements Serializable {
+        @Override
+        public DataHolder serialize() {
+            var holder = new DataHolder();
+            holder.putString("name", name);
+            holder.putCompound("permissions", permissions.serialize());
+            return holder;
+        }
+
+        public static Role from(DataHolder holder) {
+            var name = holder.getString("name");
+            var permissions = Permissions.from(holder.getCompound("permissions"));
+            return new Role(name, permissions);
+        }
+    }
+
+    public record UserDetails(Role role, Permissions permissions) implements Serializable {
+        @Override
+        public DataHolder serialize() {
+            var holder = new DataHolder();
+            holder.putCompound("role", role.serialize());
+            holder.putCompound("permissions", permissions.serialize());
+            return holder;
+        }
+
+        public static UserDetails from(DataHolder holder) {
+            var role = Role.from(holder.getCompound("role"));
+            var permissions = Permissions.from(holder.getCompound("permissions"));
+            return new UserDetails(role, permissions);
+        }
+    }
+
+    public record Permissions(
+            boolean canEditTeam,
+            boolean canManageMembers
+    ) implements Serializable {
+        @Override
+        public DataHolder serialize() {
+            var holder = new DataHolder();
+            holder.putBoolean("canEditTeam", canEditTeam);
+            holder.putBoolean("canManageMembers", canManageMembers);
+            return holder;
+        }
+
+        public static Permissions from(DataHolder holder) {
+            var canEditTeam = holder.getBoolean("canEditTeam", false);
+            var canManageMembers = holder.getBoolean("canManageMembers", false);
+            return new Permissions(canEditTeam, canManageMembers);
+        }
     }
 }

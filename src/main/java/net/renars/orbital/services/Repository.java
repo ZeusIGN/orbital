@@ -33,21 +33,20 @@ public abstract class Repository<V extends Entity> {
         if (!scan.hasItems()) return;
         for (var item : scan.items()) {
             var compound = DataHolder.from(item);
-            if (!scheme.valid(compound)) continue;
             var entity = scheme.extract(compound);
             if (entity.isError()) {
-                Orbital.LOGGER.error("{} | Failed to load entity from DB: {}", scheme.tableName(), entity.errorMsg());
+                Orbital.LOGGER.error("{} | Failed to load entity from DB: {}\n{}", scheme.tableName(), entity.errorMsg(), item);
                 continue;
             }
             var value = entity.value();
-            save(value.id(), value);
+            loadToStorage(value.id(), value);
         }
     }
 
     protected void saveToDB(V entity) {
         var result = scheme.loader().serialize(entity);
         if (result.isError()) {
-            Orbital.LOGGER.error("{} | Failed to serialize entity for DB save: {}", scheme.tableName(), result.errorMsg());
+            Orbital.LOGGER.error("{} | Failed to serialize entity for DB save: {}\n{}", scheme.tableName(), result.errorMsg(), entity);
             return;
         }
         var compound = result.value();
@@ -55,7 +54,7 @@ public abstract class Repository<V extends Entity> {
         client.putItem(builder -> builder.tableName(scheme.tableName()).item(item));
     }
 
-    public void save(long key, V value) {
+    public void loadToStorage(long key, V value) {
         storage.put(key, value);
     }
 

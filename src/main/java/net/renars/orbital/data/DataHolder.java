@@ -19,7 +19,7 @@ public class DataHolder {
         this.data = new HashMap<>();
     }
 
-    private DataHolder(Map<String, AttributeValue> data) {
+    public DataHolder(Map<String, AttributeValue> data) {
         this.data = data;
     }
 
@@ -90,16 +90,31 @@ public class DataHolder {
         return toString(attr);
     }
 
+    public String getString(String key, String defaultValue) {
+        var str = getString(key);
+        return str != null ? str : defaultValue;
+    }
+
     public Number getNumber(String key) {
         var attr = data.get(key);
         if (attr == null || attr.n() == null) return null;
         return toNumber(attr);
     }
 
+    public Number getNumber(String key, Number defaultValue) {
+        var num = getNumber(key);
+        return num != null ? num : defaultValue;
+    }
+
     public Long getLong(String key) {
         var attr = data.get(key);
         if (attr == null || attr.n() == null) return null;
         return toLong(attr);
+    }
+
+    public Long getLong(String key, Long defaultValue) {
+        var num = getLong(key);
+        return num != null ? num : defaultValue;
     }
 
     public Integer getInteger(String key) {
@@ -109,16 +124,39 @@ public class DataHolder {
         return toNumber(attr).intValue();
     }
 
+    public Integer getInteger(String key, Integer defaultValue) {
+        var num = getInteger(key);
+        return num != null ? num : defaultValue;
+    }
+
     public Boolean getBoolean(String key) {
         var attr = data.get(key);
         if (attr == null || attr.bool() == null) return null;
         return toBool(attr);
     }
 
+    public Boolean getBoolean(String key, Boolean defaultValue) {
+        var bool = getBoolean(key);
+        return bool != null ? bool : defaultValue;
+    }
+
     public List<AttributeValue> getList(String key) {
         var attr = data.get(key);
         if (attr == null || attr.l() == null) return null;
         return toList(attr);
+    }
+
+    public List<AttributeValue> getList(String key, List<AttributeValue> defaultValue) {
+        var list = getList(key);
+        return list != null ? list : defaultValue;
+    }
+
+    public <V> List<V> getList(String key, Function<AttributeValue, V> mapper, List<V> defaultValue) {
+        var list = getList(key);
+        if (list == null) return defaultValue;
+        return list.stream()
+                .map(mapper)
+                .toList();
     }
 
     public <V> List<V> getList(String key, Function<AttributeValue, V> mapper) {
@@ -135,10 +173,20 @@ public class DataHolder {
         return toMap(attr);
     }
 
+    public Map<String, AttributeValue> getMap(String key, Map<String, AttributeValue> defaultValue) {
+        var map = getMap(key);
+        return map != null ? map : defaultValue;
+    }
+
     public DataHolder getCompound(String key) {
         var map = getMap(key);
         if (map == null) return null;
         return DataHolder.from(map);
+    }
+
+    public DataHolder getCompound(String key, DataHolder defaultValue) {
+        var compound = getCompound(key);
+        return compound != null ? compound : defaultValue;
     }
 
     public boolean containsKey(String key) {
