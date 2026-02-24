@@ -7,15 +7,14 @@ import net.renars.orbital.services.UserRepository;
 import net.renars.orbital.user.User;
 import net.renars.orbital.utils.Serializable;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class Team implements Entity {
     @Getter
     private final long id;
     private final HashMap<Long, UserDetails> members = new HashMap<>();
+    private final Set<User> invitedUsers = new HashSet<>();
     private final HashMap<String, Role> roles = new HashMap<>() {{
         put("manager", new Role("manager", new Permissions(true, true)));
         put("member", new Role("member", new Permissions(false, false)));
@@ -32,12 +31,21 @@ public class Team implements Entity {
         return roles.get(name);
     }
 
+    public void createInviteFor(User user) {
+        invitedUsers.add(user);
+    }
+
     public boolean roleExists(String name) {
         return roles.containsKey(name);
     }
 
     public void addRole(String name, Permissions permissions) {
         roles.put(name, new Role(name, permissions));
+    }
+
+    public void removeRole(String name) {
+        if (roles.size() - 1 <= 0) return;
+        roles.remove(name);
     }
 
     public List<User> teamMembers(UserRepository userRepository) {

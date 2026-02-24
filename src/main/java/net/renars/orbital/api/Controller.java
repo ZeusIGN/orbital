@@ -12,6 +12,10 @@ public interface Controller {
         return ResponseEntity.badRequest().body(message);
     }
 
+    default <T> ResponseEntity<T> badRequest() {
+        return ResponseEntity.badRequest().body(null);
+    }
+
     default <T> ResponseEntity<T> internalServerError(T message) {
         return ResponseEntity.status(500).body(message);
     }

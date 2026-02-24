@@ -5,7 +5,9 @@ import net.renars.orbital.services.UserRepository;
 import net.renars.orbital.services.WrappedUserService;
 import net.renars.orbital.utils.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.configurationprocessor.json.JSONObject;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -73,7 +75,7 @@ public class UserController implements Controller {
         var jwtToken = jwtService.generateToken(userDetails);
         var refreshToken = jwtService.generateRefreshToken(userDetails);
 
-        return LoginResponse.ok(jwtToken, refreshToken);
+        return buildLoginResponse(jwtToken, refreshToken);
     }
 
     @PostMapping("/refresh-token")
@@ -96,21 +98,29 @@ public class UserController implements Controller {
         if (!jwtService.isTokenValid(refreshToken, userDetails))
             return LoginResponse.badRequest("Invalid Refresh Token");
         var accessToken = jwtService.generateToken(userDetails);
-        return LoginResponse.ok(accessToken, refreshToken);
+        return buildLoginResponse(accessToken, refreshToken);
     }
 
     @GetMapping("/me")
-    public ResponseEntity<String> getMe() {
+    public ResponseEntity<UserResponse> getMe() {
         var userOpt = getAuthUser();
-        if (userOpt.isEmpty()) return badRequest("Unauthorized");
+        if (userOpt.isEmpty()) return badRequest();
         var user = userOpt.get();
-        return ok("ID: %d\nUsername: %s\nDisplay Name: %s\nEmail: %s\nIn Team: %s".formatted(
-                user.id(),
-                user.getUsername(),
-                user.getDisplayName(),
-                user.getEmail(),
-                user.inTeam() ? "No" : "Yes"
-        ));
+        return ok(new UserResponse(user.id(), user.getUsername(), user.getDisplayName()));
+    }
+
+    @GetMapping("/logout")
+    public ResponseEntity<String> logout() {
+        var clearCookie = ResponseCookie.from("refreshToken", "")
+                .httpOnly(true)
+                .secure(true)
+                .sameSite("Strict")
+                .path("/")
+                .maxAge(0)
+                .build();
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, clearCookie.toString())
+                .build();
     }
 
     // debug --Renars
@@ -120,6 +130,18 @@ public class UserController implements Controller {
                 .map(user -> "%s | %s | %s\n".formatted(user.getDisplayName(), user.getUsername(), user.id()))
                 .collect(Collectors.joining())
         );
+    }
+
+    private ResponseEntity<LoginResponse> buildLoginResponse(String accessToken, String refreshToken) {
+        var refreshCookie = ResponseCookie.from("refreshToken", refreshToken)
+                .httpOnly(true)
+                .secure(true)
+                .sameSite("Strict")
+                .path("/")
+                .build();
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
+                .body(new LoginResponse(accessToken, refreshToken, null));
     }
 
     public record LoginRequest(
@@ -136,10 +158,13 @@ public class UserController implements Controller {
         private static ResponseEntity<LoginResponse> badRequest(String message) {
             return ResponseEntity.badRequest().body(new LoginResponse(null, null, message));
         }
+    }
 
-        private static ResponseEntity<LoginResponse> ok(String accessToken, String refreshToken) {
-            return ResponseEntity.ok(new LoginResponse(accessToken, refreshToken, null));
-        }
+    public record UserResponse(
+            long id,
+            String username,
+            String displayName
+    ) {
     }
 
     public record RegisterRequest(

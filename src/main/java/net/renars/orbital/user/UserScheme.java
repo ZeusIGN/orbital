@@ -20,7 +20,7 @@ public class UserScheme implements RepoScheme<User> {
                 var displayName = data.getString("displayName");
                 var teams = data.getList("teams", DataHolder::toLong);
                 var user = new User(id, signUpStamp, email, password, username, displayName, Set.copyOf(teams));
-                user.loadChildren(data);
+                user.loadAdditional(data);
                 return user;
             })
             .validator()
@@ -31,7 +31,6 @@ public class UserScheme implements RepoScheme<User> {
             .add("password", DataHolder::getString)
             .add("displayName", DataHolder::getString)
             .withDefault("teams", DataHolder::getLong, (holder, id) -> holder.putList(id, new ArrayList<>()))
-            .withDefault("children", DataHolder::getList, (holder, id) -> holder.putList(id, new ArrayList<>()))
             .build();
 
     @Override

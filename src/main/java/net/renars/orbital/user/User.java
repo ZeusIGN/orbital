@@ -22,6 +22,8 @@ public class User implements Entity {
     @Getter
     private final long signUpStamp;
     @Getter
+    private final Notifications notifications = new Notifications(this);
+    @Getter
     private Set<Long> activeTeams;
     @Getter
     @Unique
@@ -82,12 +84,13 @@ public class User implements Entity {
         compound.putString("username", username);
         compound.putString("displayName", displayName);
         compound.putList("activeTeams", activeTeams.stream().toList(), (id) -> AttributeValue.builder().n(id + "").build());
-        DataHolder children = new DataHolder();
-        for (Serializable child : children()) {
-            children.putCompound(child.getClass().getSimpleName(), child.serialize());
-        }
-        compound.putCompound("children", children);
+        compound.putCompound("notifications", notifications.serialize());
         return compound;
+    }
+
+    public void loadAdditional(DataHolder data) {
+        var notificationsData = data.getCompound("notifications");
+        if (notificationsData != null) notifications.deserialize(notificationsData);
     }
 
     public enum WebRole {
