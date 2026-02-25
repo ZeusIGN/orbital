@@ -43,7 +43,7 @@ public class SecurityConfig {
         // publiskie endpointi --Renars
         http.authorizeHttpRequests((requests) -> requests
                 //.requestMatchers("/user/login", "/user/register", "/user/refresh-token")
-                .requestMatchers("/user/*", "/team/*")
+                .requestMatchers("/user/*", "/team/*", "/workspace/**")
                 .permitAll()
                 .anyRequest().authenticated()
         );

@@ -3,18 +3,22 @@ package net.renars.orbital.team;
 import lombok.Getter;
 import net.renars.orbital.data.DataHolder;
 import net.renars.orbital.data.Entity;
+import net.renars.orbital.services.TeamRepository;
 import net.renars.orbital.services.UserRepository;
 import net.renars.orbital.user.User;
 import net.renars.orbital.utils.Serializable;
+import net.renars.orbital.workspace.Workspace;
+import net.renars.orbital.workspace.WorkspaceHolder;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class Team implements Entity {
+public class Team implements Entity, WorkspaceHolder {
     @Getter
     private final long id;
     private final HashMap<Long, UserDetails> members = new HashMap<>();
     private final Set<User> invitedUsers = new HashSet<>();
+    private final Set<Workspace> workspaces = new HashSet<>();
     private final HashMap<String, Role> roles = new HashMap<>() {{
         put("manager", new Role("manager", new Permissions(true, true)));
         put("member", new Role("member", new Permissions(false, false)));
@@ -101,6 +105,20 @@ public class Team implements Entity {
         }
         compound.putCompound("members", membersCompound);
         return compound;
+    }
+
+    @Override
+    public Set<Workspace> combinedWorkspaces(UserRepository userRepository, TeamRepository teamRepository) {
+        return new HashSet<>(workspaces);
+    }
+
+    @Override
+    public Set<Workspace> workspaces() {
+        return new HashSet<>(workspaces);
+    }
+
+    public void addWorkspace(Workspace workspace) {
+        workspaces.add(workspace);
     }
 
     public record Role(String name, Permissions permissions) implements Serializable {

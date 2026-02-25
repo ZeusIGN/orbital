@@ -5,6 +5,7 @@ import net.renars.orbital.data.DataHolder;
 import net.renars.orbital.data.Entity;
 import net.renars.orbital.utils.RepoScheme;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.dynamodb.model.KeyType;
 import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
 
 import java.util.HashMap;
@@ -25,7 +26,17 @@ public abstract class Repository<V extends Entity> {
         loadFromDB();
     }
 
+    private void createTable() {
+        var tables = client.listTables().tableNames();
+        if (tables.contains(scheme.tableName())) return;
+        client.createTable(builder -> builder.keySchema(ks -> ks.attributeName("id").keyType(KeyType.HASH))
+                .tableName(scheme.tableName())
+                .provisionedThroughput(pt -> pt.readCapacityUnits(5L).writeCapacityUnits(5L))
+        );
+    }
+
     private void loadFromDB() {
+        createTable();
         var req = ScanRequest.builder()
                 .tableName(scheme.tableName())
                 .build();
@@ -43,7 +54,7 @@ public abstract class Repository<V extends Entity> {
         }
     }
 
-    protected void saveToDB(V entity) {
+    public void saveToDB(V entity) {
         var result = scheme.loader().serialize(entity);
         if (result.isError()) {
             Orbital.LOGGER.error("{} | Failed to serialize entity for DB save: {}\n{}", scheme.tableName(), result.errorMsg(), entity);

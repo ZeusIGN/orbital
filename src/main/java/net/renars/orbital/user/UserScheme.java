@@ -5,7 +5,6 @@ import net.renars.orbital.data.DataLoader;
 import net.renars.orbital.utils.RepoScheme;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 
 public class UserScheme implements RepoScheme<User> {

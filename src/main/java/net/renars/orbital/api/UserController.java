@@ -1,11 +1,12 @@
 package net.renars.orbital.api;
 
 import net.renars.orbital.services.JwtService;
+import net.renars.orbital.services.TeamRepository;
 import net.renars.orbital.services.UserRepository;
 import net.renars.orbital.services.WrappedUserService;
 import net.renars.orbital.utils.StringUtils;
+import net.renars.orbital.workspace.Workspace;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.configurationprocessor.json.JSONObject;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +14,8 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -23,13 +26,21 @@ import java.util.stream.Collectors;
 @RequestMapping("/user")
 public class UserController implements Controller {
     private final UserRepository userService;
+    private final TeamRepository teamRepository;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final WrappedUserService userDetailsService;
 
     @Autowired
-    public UserController(UserRepository userService, JwtService jwtService, AuthenticationManager authenticationManager, WrappedUserService userDetailsService) {
+    public UserController(
+            UserRepository userService,
+            TeamRepository teamRepository,
+            JwtService jwtService,
+            AuthenticationManager authenticationManager,
+            WrappedUserService userDetailsService
+    ) {
         this.userService = userService;
+        this.teamRepository = teamRepository;
         this.jwtService = jwtService;
         this.authenticationManager = authenticationManager;
         this.userDetailsService = userDetailsService;
@@ -109,6 +120,38 @@ public class UserController implements Controller {
         return ok(new UserResponse(user.id(), user.getUsername(), user.getDisplayName()));
     }
 
+    @GetMapping("/workspaces")
+    public ResponseEntity<WorkspacesResponse> getWorkspaces() {
+        var userOpt = getAuthUser();
+        if (userOpt.isEmpty()) return badRequest();
+        var user = userOpt.get();
+        var workspaceIds = user.combinedWorkspaces(userService, teamRepository)
+                .stream()
+                .collect(Collectors.toMap(
+                        workspace -> workspace.getId().toString(),
+                        Workspace::getName,
+                        (a, _) -> a
+                ));
+        return ok(new WorkspacesResponse(workspaceIds));
+    }
+
+    @GetMapping("/workspace/{id}")
+    public ResponseEntity<WorkspaceResponse> getWorkspace(@PathVariable String id) {
+        var userOpt = getAuthUser();
+        if (userOpt.isEmpty()) return badRequest();
+        var user = userOpt.get();
+        UUID workspaceId;
+        try {
+            workspaceId = UUID.fromString(id);
+        } catch (Exception e) {
+            return badRequest(null);
+        }
+        var workspaceOpt = user.workspaceByID(workspaceId, userService, teamRepository);
+        if (workspaceOpt.isEmpty()) return badRequest(null);
+        var workspace = workspaceOpt.get();
+        return ok(new WorkspaceResponse(workspace.getId(), workspace.getName()));
+    }
+
     @GetMapping("/logout")
     public ResponseEntity<String> logout() {
         var clearCookie = ResponseCookie.from("refreshToken", "")
@@ -164,6 +207,17 @@ public class UserController implements Controller {
             long id,
             String username,
             String displayName
+    ) {
+    }
+
+    public record WorkspaceResponse(
+            UUID id,
+            String name
+    ) {
+    }
+
+    public record WorkspacesResponse(
+            Map<String, String> workspaces
     ) {
     }
 

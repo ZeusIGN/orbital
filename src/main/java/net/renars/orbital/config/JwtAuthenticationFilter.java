@@ -63,9 +63,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     new WebAuthenticationDetailsSource().buildDetails(request)
             );
             SecurityContextHolder.getContext().setAuthentication(authToken);
-        } catch (Exception a) {
+        } catch (Exception _) {
             // ignorējam šo --Renars
-            Orbital.LOGGER.error("Error processing JWT: {}", a.getMessage(), a);
         }
         filterChain.doFilter(request, response);
     }
