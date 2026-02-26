@@ -123,7 +123,13 @@ public class Team implements Entity, WorkspaceHolder {
         }
         compound.putList("invitedUsers", invitedUsers.stream().toList(), (id) -> AttributeValue.builder().n(id + "").build());
         compound.putCompound("members", membersCompound);
+        serializeWorkspaces(compound);
         return compound;
+    }
+
+    public void loadAdditional(DataHolder data) {
+        var workspacesData = deserializeWorkspaces(data);
+        if (workspacesData != null) workspaces.addAll(workspacesData);
     }
 
     @Override

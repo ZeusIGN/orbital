@@ -11,7 +11,7 @@ public record DateEvent(
         String title,
         String description,
         Number setDate,
-        Number dueDate,
+        Number dateDue,
         Set<Long> attendees,
         boolean editable
 ) implements Serializable {
@@ -22,7 +22,7 @@ public record DateEvent(
         holder.putString("title", title);
         holder.putString("description", description);
         if (setDate != null) holder.putNumber("setDate", setDate);
-        if (dueDate != null) holder.putNumber("dueDate", dueDate);
+        if (dateDue != null) holder.putNumber("dueDate", dateDue);
         var attendeesHolder = new DataHolder();
         int i = 0;
         for (var attendee : attendees) {

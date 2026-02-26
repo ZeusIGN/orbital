@@ -24,7 +24,9 @@ public class TeamScheme implements RepoScheme<Team> {
                 }
                 var invited = data.getList("invitedUsers", DataHolder::toLong);
                 if (teamMembers.isEmpty()) return null;
-                return new Team(id, name).addMembers(teamMembers).addInvitedUsers(invited);
+                var team = new Team(id, name).addMembers(teamMembers).addInvitedUsers(invited);
+                team.loadAdditional(data);
+                return team;
             })
             .validator()
             .add("id", DataHolder::getLong)
