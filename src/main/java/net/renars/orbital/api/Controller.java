@@ -7,6 +7,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.Optional;
 
+// helper interface --Renars
 public interface Controller {
     default <T> ResponseEntity<T> badRequest(T message) {
         return ResponseEntity.badRequest().body(message);

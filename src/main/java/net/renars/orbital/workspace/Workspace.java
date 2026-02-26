@@ -8,6 +8,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.UUID;
 
+/**
+ * Datu glabātuve un organizācija, kas satur kalendāra notikumus un citas lietas --Renars
+ */
 public class Workspace implements Serializable {
     @Getter
     private final UUID id;

@@ -14,9 +14,14 @@ import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+/**
+ * Vienkārša abstrakta repository klase, kas nodrošina pamata CRUD operācijas un in-memory cache.
+ * --Renars
+ */
 public abstract class Repository<V extends Entity> {
     // in-memory storage --Renars
     private final Map<Long, V> storage = new HashMap<>();
+    // scheme, kas nosaka, kā entītijas tiek saglabātas un ielādētas no DB --Renars
     private final RepoScheme<V> scheme;
     final DynamoDbClient client;
 
@@ -26,6 +31,7 @@ public abstract class Repository<V extends Entity> {
         loadFromDB();
     }
 
+    // ja tabula neeksistē, izveido to --Renars
     private void createTable() {
         var tables = client.listTables().tableNames();
         if (tables.contains(scheme.tableName())) return;
@@ -35,6 +41,7 @@ public abstract class Repository<V extends Entity> {
         );
     }
 
+    // ielādē visus entity no DB un ieliek tos in-memory storage --Renars
     private void loadFromDB() {
         createTable();
         var req = ScanRequest.builder()
@@ -57,6 +64,7 @@ public abstract class Repository<V extends Entity> {
     protected void loadedEntity(V entity) {
     }
 
+    // saglabā entity state DB --Renars
     public void saveToDB(V entity) {
         var result = scheme.loader().serialize(entity);
         if (result.isError()) {
@@ -68,11 +76,13 @@ public abstract class Repository<V extends Entity> {
         client.putItem(builder -> builder.tableName(scheme.tableName()).item(item));
     }
 
+    // ielādē entity in-memory storage --Renars
     public void loadToStorage(long key, V value) {
         storage.put(key, value);
         loadedEntity(value);
     }
 
+    // atgriež Optional, lai izvairītos no null pointer exceptioniem --Renars
     public Optional<V> get(long key) {
         return Optional.of(storage.get(key));
     }

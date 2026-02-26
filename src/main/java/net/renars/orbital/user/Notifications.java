@@ -6,6 +6,7 @@ import net.renars.orbital.utils.Serializable;
 import java.util.HashSet;
 import java.util.Set;
 
+// neizmantots pagaidām! --Renars
 public class Notifications implements Serializable {
     private final User user;
     private final HashSet<Message> messages = new HashSet<>();

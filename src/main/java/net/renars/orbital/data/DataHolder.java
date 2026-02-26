@@ -10,6 +10,7 @@ import java.util.function.Function;
 
 /**
  * Vienkāršs wrapper ap DynamoDB AttributeValue.
+ * Savieglo dzīvi 10x.
  * --Renars
  */
 public class DataHolder {

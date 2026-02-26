@@ -8,6 +8,11 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+/**
+ * Datu serilizācija un deserializācija.
+ * Arī nodrošina validāciju un default vērtības.
+ * --Renars
+ */
 public class DataLoader<V extends Entity> {
     final Validator validator = new Validator();
     private Deserializer<V> deserializer;
@@ -31,6 +36,7 @@ public class DataLoader<V extends Entity> {
         return validator;
     }
 
+    // validē, vai dataHolder satur visus nepieciešamos laukus un default vērtības --Renars
     public Result<Void> checkValidity(DataHolder dataHolder) {
         for (var entry : validator.fields.entrySet()) {
             var id = entry.getKey();
@@ -46,6 +52,7 @@ public class DataLoader<V extends Entity> {
         return Result.ok();
     }
 
+    // deserializē dataHolder arī validējot to --Renars
     public Result<V> deserialize(DataHolder dataHolder) {
         var validity = checkValidity(dataHolder);
         if (validity.isError()) return Result.error(validity.errorMsg());
@@ -55,6 +62,7 @@ public class DataLoader<V extends Entity> {
         return Result.ok(entity);
     }
 
+    // serializē entity arī validējot to --Renars
     public Result<DataHolder> serialize(V entity) {
         if (serializer == null) return Result.error("Serializer not defined");
         DataHolder dataHolder = serializer.apply(entity);
@@ -72,16 +80,19 @@ public class DataLoader<V extends Entity> {
         final LinkedHashMap<String, BiFunction<DataHolder, String, Object>> fields = new LinkedHashMap<>();
         final HashMap<String, BiConsumer<DataHolder, String>> defaulters = new HashMap<>();
 
+        // definē lauku, kas ir nepieciešams validācijai --Renars
         public Validator add(String id, BiFunction<DataHolder, String, Object> extractor) {
             put(id, extractor, null);
             return this;
         }
 
+        // definē lauku, kas ir nepieciešams validācijai, un arī default vērtību, ja lauks nav klāt --Renars
         public Validator withDefault(String id, BiFunction<DataHolder, String, Object> extractor, BiConsumer<DataHolder, String> defaulter) {
             put(id, extractor, defaulter);
             return this;
         }
 
+        // helperis --Renars
         private void put(String id, BiFunction<DataHolder, String, Object> extractor, BiConsumer<DataHolder, String> defaulter) {
             if (fields.containsKey(id)) throw new IllegalStateException("Field already defined: " + id);
             fields.put(id, extractor);

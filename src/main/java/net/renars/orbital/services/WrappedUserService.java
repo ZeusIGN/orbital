@@ -7,6 +7,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+// lai varētu izmantot Spring Security --Renars
 @Service
 public class WrappedUserService implements UserDetailsService {
     private final UserRepository userRepository;

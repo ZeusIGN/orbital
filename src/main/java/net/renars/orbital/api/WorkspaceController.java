@@ -12,6 +12,10 @@ import java.util.HashMap;
 import java.util.Set;
 import java.util.UUID;
 
+/**
+ * Workspace (publiskais) API.
+ * --Renars
+ */
 @RestController
 @RequestMapping("/workspace")
 public class WorkspaceController implements Controller {
@@ -31,6 +35,7 @@ public class WorkspaceController implements Controller {
         if (user.isEmpty()) return badRequest("Unauthorized");
         var name = request.name.trim();
         if (name.isBlank()) return badRequest("Workspace name cannot be blank");
+        // arbitrary limits, lai neviens neizveido 9999 workspaces un neapgrūtina serveri --Renars
         if (user.get().workspaces().size() >= 16) return badRequest("Max workspace size reached! | Max 16 workspaces per user");
         var teamID = request.teamID;
         var workspace = new Workspace(UUID.randomUUID(), name);
@@ -63,6 +68,7 @@ public class WorkspaceController implements Controller {
         var workspace = workspaceOpt.get();
         workspace.createEvent();
         userRepository.saveToDB(user.get());
+        user.get().getActiveTeams(teamRepository).forEach(teamRepository::saveToDB);
         return ok("Created");
     }
 
@@ -86,6 +92,7 @@ public class WorkspaceController implements Controller {
             @PathVariable String id,
             @RequestBody UpdateEvent request
     ) {
+        // TODO šis ir ļoti suboptimal --Renars
         var user = getAuthUser();
         if (user.isEmpty()) return badRequest("Unauthorized");
         UUID workspaceId;
@@ -99,6 +106,7 @@ public class WorkspaceController implements Controller {
         var workspace = workspaceOpt.get();
         var event = new DateEvent(request.id, request.title, request.description, request.setDate, request.dateDue, request.attendees, true);
         workspace.updateEvent(event);
+        // TODO pārveidot uz functional interface, lai izvairītos no šī --Renars
         userRepository.saveToDB(user.get());
         user.get().getActiveTeams(teamRepository).forEach(teamRepository::saveToDB);
         return ok("Updated");

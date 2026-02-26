@@ -91,22 +91,6 @@ public class TeamController implements Controller {
         return ok("Joined team!");
     }
 
-    @GetMapping("/teams")
-    public ResponseEntity<String> getTeams() {
-        var teams = teamRepository.getAll().entrySet().stream()
-                .map(entry -> {
-                    var id = entry.getKey();
-                    var team = entry.getValue();
-                    return "ID: %s | Name: %s | Members: %s".formatted(id, team.getName(),
-                            team.teamMembers(userRepository).stream().map(User::getDisplayName)
-                            .reduce((a, b) -> a + ", " + b).orElse("No members")
-                    );
-                })
-                .reduce((a, b) -> a + "\n" + b)
-                .orElse("No teams found");
-        return ok(teams);
-    }
-
     public record TeamInfo(
             long id,
             String name,

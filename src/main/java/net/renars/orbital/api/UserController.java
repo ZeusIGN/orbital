@@ -61,6 +61,7 @@ public class UserController implements Controller {
         if (password.length() < 8) return badRequest("Password must be at least 8 characters long!");
         // 72 byte limits priekšs bcrypt --Renars
         if (password.getBytes().length > 72) return badRequest("Password is too long!");
+        // TODO email support --Renars
         //if (!StringUtils.isValidEmail(email)) return badRequest("Invalid email!");
         var result = userService.registerUser(email, name, password, displayName);
         if (result.isError()) return badRequest(result.errorMsg());
@@ -196,15 +197,6 @@ public class UserController implements Controller {
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, clearCookie.toString())
                 .build();
-    }
-
-    // debug --Renars
-    @GetMapping("/users")
-    public ResponseEntity<String> getUsers() {
-        return ok(userService.getAllUsers().stream()
-                .map(user -> "%s | %s | %s\n".formatted(user.getDisplayName(), user.getUsername(), user.id()))
-                .collect(Collectors.joining())
-        );
     }
 
     private ResponseEntity<LoginResponse> buildLoginResponse(String accessToken, String refreshToken) {

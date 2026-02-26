@@ -10,6 +10,7 @@ import java.util.Set;
 import java.util.UUID;
 
 public interface WorkspaceHolder {
+    // primāri Team, bet varbūt kaut kad būs arī cits veids, kas varētu saturēt workspaces, tāpēc šī metode ir šeit --Renars
     Set<Workspace> combinedWorkspaces(UserRepository userRepository, TeamRepository teamRepository);
 
     Set<Workspace> workspaces();
