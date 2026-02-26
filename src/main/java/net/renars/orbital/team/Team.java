@@ -9,6 +9,7 @@ import net.renars.orbital.user.User;
 import net.renars.orbital.utils.Serializable;
 import net.renars.orbital.workspace.Workspace;
 import net.renars.orbital.workspace.WorkspaceHolder;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -17,7 +18,7 @@ public class Team implements Entity, WorkspaceHolder {
     @Getter
     private final long id;
     private final HashMap<Long, UserDetails> members = new HashMap<>();
-    private final Set<User> invitedUsers = new HashSet<>();
+    private final Set<Long> invitedUsers = new HashSet<>();
     private final Set<Workspace> workspaces = new HashSet<>();
     private final HashMap<String, Role> roles = new HashMap<>() {{
         put("manager", new Role("manager", new Permissions(true, true)));
@@ -36,7 +37,8 @@ public class Team implements Entity, WorkspaceHolder {
     }
 
     public void createInviteFor(User user) {
-        invitedUsers.add(user);
+        invitedUsers.add(user.id());
+        user.getNotifications().addMessage("teamInvite", "Team Invite", "You have been invited to join the team " + this.name, "/teams/" + id + "/join");
     }
 
     public boolean roleExists(String name) {
@@ -62,6 +64,7 @@ public class Team implements Entity, WorkspaceHolder {
 
     public void addMember(User user, UserDetails details) {
         members.put(user.id(), details);
+        invitedUsers.remove(user.id());
         user.addTeam(id);
     }
 
@@ -76,6 +79,21 @@ public class Team implements Entity, WorkspaceHolder {
 
     public Team addMembers(HashMap<Long, UserDetails> users) {
         members.putAll(users);
+        return this;
+    }
+
+    public Team load(UserRepository userRepository) {
+        for (var id : members.keySet()) {
+            var userOpt = userRepository.byID(id);
+            if (userOpt.isEmpty()) continue;
+            var user = userOpt.get();
+            user.addTeam(getId());
+        }
+        return this;
+    }
+
+    public Team addInvitedUsers(Collection<Long> users) {
+        invitedUsers.addAll(users);
         return this;
     }
 
@@ -103,6 +121,7 @@ public class Team implements Entity, WorkspaceHolder {
             var details = entry.getValue();
             membersCompound.putCompound(String.valueOf(id), details.serialize());
         }
+        compound.putList("invitedUsers", invitedUsers.stream().toList(), (id) -> AttributeValue.builder().n(id + "").build());
         compound.putCompound("members", membersCompound);
         return compound;
     }
@@ -119,6 +138,10 @@ public class Team implements Entity, WorkspaceHolder {
 
     public void addWorkspace(Workspace workspace) {
         workspaces.add(workspace);
+    }
+
+    public boolean isInvited(User user) {
+        return invitedUsers.contains(user.id());
     }
 
     public record Role(String name, Permissions permissions) implements Serializable {

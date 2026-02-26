@@ -54,6 +54,9 @@ public abstract class Repository<V extends Entity> {
         }
     }
 
+    protected void loadedEntity(V entity) {
+    }
+
     public void saveToDB(V entity) {
         var result = scheme.loader().serialize(entity);
         if (result.isError()) {
@@ -67,6 +70,7 @@ public abstract class Repository<V extends Entity> {
 
     public void loadToStorage(long key, V value) {
         storage.put(key, value);
+        loadedEntity(value);
     }
 
     public Optional<V> get(long key) {

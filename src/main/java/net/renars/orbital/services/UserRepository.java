@@ -25,7 +25,7 @@ public class UserRepository extends Repository<User> {
             String displayName
     ) {
         if (byUsername(username).isPresent()) return Result.error("User with this username already exists!");
-        if (byEmail(email).isPresent()) return Result.error("User with this email already exists!");
+        //if (byEmail(email).isPresent()) return Result.error("User with this email already exists!");
         var hashedPassword = BCrypt.hashpw(unencryptedPassword, BCrypt.gensalt());
         var registerStamp = System.currentTimeMillis();
         var user = new User(

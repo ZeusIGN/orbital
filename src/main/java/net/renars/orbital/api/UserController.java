@@ -4,6 +4,7 @@ import net.renars.orbital.services.JwtService;
 import net.renars.orbital.services.TeamRepository;
 import net.renars.orbital.services.UserRepository;
 import net.renars.orbital.services.WrappedUserService;
+import net.renars.orbital.team.Team;
 import net.renars.orbital.utils.StringUtils;
 import net.renars.orbital.workspace.Workspace;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +15,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -54,12 +56,12 @@ public class UserController implements Controller {
         var password = request.password();
         var name = request.username();
         var displayName = request.displayName();
-        if (email.isBlank() || name.isBlank()) return badRequest("Email or username cannot be blank");
+        if (name.isBlank()) return badRequest("Username cannot be blank");
         if (displayName.isBlank()) return badRequest("Display name cannot be blank!");
         if (password.length() < 8) return badRequest("Password must be at least 8 characters long!");
         // 72 byte limits priekšs bcrypt --Renars
         if (password.getBytes().length > 72) return badRequest("Password is too long!");
-        if (!StringUtils.isValidEmail(email)) return badRequest("Invalid email!");
+        //if (!StringUtils.isValidEmail(email)) return badRequest("Invalid email!");
         var result = userService.registerUser(email, name, password, displayName);
         if (result.isError()) return badRequest(result.errorMsg());
         return ok("User created with ID: " + result.value().id());
@@ -110,6 +112,36 @@ public class UserController implements Controller {
             return LoginResponse.badRequest("Invalid Refresh Token");
         var accessToken = jwtService.generateToken(userDetails);
         return buildLoginResponse(accessToken, refreshToken);
+    }
+
+    @GetMapping("/teamInvites")
+    public ResponseEntity<TeamInvitesResponse> getTeamInvites() {
+        var userOpt = getAuthUser();
+        if (userOpt.isEmpty()) return badRequest(null);
+        var user = userOpt.get();
+        var invites = teamRepository.teamsInvitingUser(user).stream()
+                .collect(Collectors.toMap(
+                        Team::id,
+                        Team::getName,
+                        (a, _) -> a,
+                        HashMap::new
+                ));
+        return ok(new TeamInvitesResponse(invites));
+    }
+
+    @GetMapping("/teams")
+    public ResponseEntity<UserTeamsResponse> getTeams() {
+        var userOpt = getAuthUser();
+        if (userOpt.isEmpty()) return badRequest(null);
+        var user = userOpt.get();
+        var teams = user.getActiveTeams(teamRepository).stream()
+                .collect(Collectors.toMap(
+                        Team::id,
+                        Team::getName,
+                        (a, _) -> a,
+                        HashMap::new
+                ));
+        return ok(new UserTeamsResponse(teams));
     }
 
     @GetMapping("/me")
@@ -185,6 +217,16 @@ public class UserController implements Controller {
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
                 .body(new LoginResponse(accessToken, refreshToken, null));
+    }
+
+    public record UserTeamsResponse(
+            HashMap<Long, String> teams
+    ) {
+    }
+
+    public record TeamInvitesResponse(
+            HashMap<Long, String> invites
+    ) {
     }
 
     public record LoginRequest(
