@@ -5,7 +5,6 @@ import net.renars.orbital.services.TeamRepository;
 import net.renars.orbital.services.UserRepository;
 import net.renars.orbital.services.WrappedUserService;
 import net.renars.orbital.team.Team;
-import net.renars.orbital.utils.StringUtils;
 import net.renars.orbital.workspace.Workspace;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
