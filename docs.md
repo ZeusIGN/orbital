@@ -1,14 +1,14 @@
-Ģenerāla informācija:
-Orbital ir kalendārs kadāi komandai vai organizācijai
-Katrs lietotājs var pievienoties komandai, un arī taisīt kopējus workspaces
-Workspace ir kalendārs, kas atļauj taisīt plānus jebkurai dienai
-Projekts izmanto SpringBoot Java 25
-Izmantoju arī Bcrypt, kas shifrē paroli
-Datubāze ir DynamoDB (nosql), shēmas tiek izskaidrotas nākamajā sekcijā
-Kaut vai SpringBoot piedāvā daudzus rīkus jau uztaisītus, es izvēlējos pārsvarā tos taisīt no jauna
-Lai būtu maksimāla kontrolē šajam projektam (un man patīk taisīt jaunus tools (kaut vai tie jau eksistē))
-Frontend ir taisīts NextJs / HeroUI, kur izmantoju TypeScript
-Nākamā informācija ir tehniska :D
+Ģenerāla informācija: <br>
+Orbital ir kalendārs kadāi komandai vai organizācijai <br>
+Katrs lietotājs var pievienoties komandai, un arī taisīt kopējus workspaces <br>
+Workspace ir kalendārs, kas atļauj taisīt plānus jebkurai dienai <br>
+Projekts izmanto SpringBoot Java 25 <br>
+Izmantoju arī Bcrypt, kas shifrē paroli <br>
+Datubāze ir DynamoDB (nosql), shēmas tiek izskaidrotas nākamajā sekcijā <br>
+Kaut vai SpringBoot piedāvā daudzus rīkus jau uztaisītus, es izvēlējos pārsvarā tos taisīt no jauna <br>
+Lai būtu maksimāla kontrolē šajam projektam (un man patīk taisīt jaunus tools (kaut vai tie jau eksistē)) <br>
+Frontend ir taisīts NextJs / HeroUI, kur izmantoju TypeScript <br>
+Nākamā informācija ir tehniska :D <br>
 
 Datubāses (table) shēmas:
 - Team (komanda)
