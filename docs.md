@@ -12,11 +12,11 @@ Nākamā informācija ir tehniska :D <br>
 
 Ja configurē projektu <br>
 Ir jātaisa jauns .env file, kur jābūt: <br>
-AWS_ACCESS_KEY= atslēga
-AWS_SECRET_KEY= atslēga
-JWT_SECRET= random liels strings
-JWT_EXPIRATION=3600000
-JWT_REFRESH_EXPIRATION=86400000
+AWS_ACCESS_KEY= atslēga <br>
+AWS_SECRET_KEY= atslēga <br>
+JWT_SECRET= random liels strings <br>
+JWT_EXPIRATION=3600000 <br>
+JWT_REFRESH_EXPIRATION=86400000 <br>
 
 Datubāses (table) shēmas:
 - Team (komanda)
