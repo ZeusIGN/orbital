@@ -1,36 +1,39 @@
-Problēmas izpēte un analīze:
+# Problēmas izpēte un analīze: <br>
 Šī projekta atrisinātā problēma ir diezgan vienkārša: kalendāra/plānošanas lietotnes komandām ir vai nu dārgas, vai arī tās 
 nenodrošina funkcijas, kuras es vēlos. Tāpēc, kad strādāju ar komandu, plānošanai parasti izmantojam tikai WhatsApp vai Discord, kas 
 laika gaitā var kļūt apgrūtinoši. Tāpēc šis projekts ir tieši tas risinājums, ko esmu meklējis komandas projektiem.
 Domājot par idejām šim projektam, es konsultējos ar dažiem projektu vadītājiem par to, ko viņi vēlētos šādā lietotnē.
 
-Programmatūras prasību specifikācija:
+# Programmatūras prasību specifikācija: <br>
 Lai es būtu apmierināts ar šo projektu, man bija nepieciešamas tikai 3 lietas:
 - Vienkārša komandas izveide.
 - Vienkārša uzdevumu pārvaldība/uzdevumu piešķiršana.
 - Minimālistisks kalendāra dizains ar papildu iestatījumiem, ja nepieciešams.
 
-Programmatūras projektējums:
+# Programmatūras projektējums: <br>
 Lai izveidotu šo lietotni, es nolēmu izmantot Springboot (Java) backend un HeroUI (TypeScript) frontent, jo man ir liela pieredze
 ar abiem frameworkiem. Sākotnēji es gribēju izmantot Rust backend, bet vairāku iemeslu dēļ nolēmu to nedarīt.
-![]()
+Savam datubāzes risinājumam es izmantoju DynamoDB (NoSQL), man ar to ir visērtāk strādāt. Un sanāca šāds ER modelis:
+<img src="./ermodel.png" alt="ER Modelis" width="600"> <br>
+Lietotnes galvenās funkcijas (papildus komandas izveidei un lietotāju reģistrēšanai) ir workspace un task pārvaldība. 
+Kas ir diezgan vienkārša: varat izveidot workspace komandas vai individuālas workspace ietvaros. 
+Tajā varat izveidot un pārvaldīt tasks. Pilns API punktu skaidrojums ir beigās!
 
+# Programmatūras izstrādes plāns: <br>
+Šī projekta plānošanai es galvenokārt izmantoju savu atmiņu un intuīciju. Man bija vispārējs plāns, kas pierakstīts dokumentā, bet viss pēc tam 
+tika plānots uz vietas. Kas lielākam projektam nebūtu optimāli. Tā kā lielākiem projektiem ir nepieciešama daudz lielāka savienojamība starp 
+sistēmām, to plānot uz vietas ir grūtāk un laikietilpīgāk. Tāpēc es nolēmu plānot vispārēju izkārtojumu, bet ne sarežģījumus. 
+Piemēram, darba vietas sistēma un tās saglabāšanas veids sākotnēji bija paredzēts citā datubāzes tabulā, bet es sapratu, ka, ja es vienkārši 
+saglabātu JSON failu vecākobjektā, tas samazinātu ielādes slodzi.
 
+# Atkļūdošanas un akcepttestēšanas pārskats: <br>
+Šī projekta atkļūdošana bija plašs process, jo katra jaunā funkcija tika pamatīgi pārbaudīta, lai pārliecinātos, ka nav kļūdu. Dažos gadījumos 
+man bija jāizveido testa gadījumi serverī (tie vēlāk tika noņemti). Testēšanai galvenokārt izmantoju iebūvēto IntelliJ atkļūdotāju, jo tas ļauj man 
+pārbaudīt atmiņu un iestatīt pārtraukumpunktus. Kad programma met kļūdas, man ir mēģinājumu/noķeršanas (try/catch) kritiskās vietās, kur nepieciešama
+kļūdu labošana vai ziņošana.
 
-
-Ģenerāla informācija: <br>
-Orbital ir kalendārs kadāi komandai vai organizācijai <br>
-Katrs lietotājs var pievienoties komandai, un arī taisīt kopējus workspaces <br>
-Workspace ir kalendārs, kas atļauj taisīt plānus jebkurai dienai <br>
-Projekts izmanto SpringBoot Java 25 <br>
-Izmantoju arī Bcrypt, kas shifrē paroli <br>
-Datubāze ir DynamoDB (nosql), shēmas tiek izskaidrotas nākamajā sekcijā <br>
-Kaut vai SpringBoot piedāvā daudzus rīkus jau uztaisītus, es izvēlējos pārsvarā tos taisīt no jauna <br>
-Lai būtu maksimāla kontrolē šajam projektam (un man patīk taisīt jaunus tools (kaut vai tie jau eksistē)) <br>
-Frontend ir taisīts NextJs / HeroUI, kur izmantoju TypeScript <br>
-Nākamā informācija ir tehniska :D <br>
-
-Ja configurē projektu <br>
+# Lietotāja ceļvedis: <br>
+Ja configurē jaunu projektu <br>
 Ir jātaisa jauns .env file, kur jābūt: <br>
 AWS_ACCESS_KEY= atslēga <br>
 AWS_SECRET_KEY= atslēga <br>
@@ -38,25 +41,11 @@ JWT_SECRET= random liels strings <br>
 JWT_EXPIRATION=3600000 <br>
 JWT_REFRESH_EXPIRATION=86400000 <br>
 
-Datubāses (table) shēmas:
-- Team (komanda)
-    - id: num - komandas id
-    - name: string - nosaukums
-    - members: list<num> - komandas biedri, kur num ir User ID
-    - invitedUsers: list<num> - cilvēki kas ir tikuši uzaicināti komandai
+Pēc tam projekta CMD var ievadīt `.\gradlew build`, lai projekts compileojas.
+Vai arī `.\gradlew bootRun`, lai testētu projektu in-ide.
 
-- User (lietotājs)
-    - id: num - lietotāja id
-    - username: string - unikāls vārds
-    - displayName: string - publiskais vārds
-    - email: string - e-pasts (nav pagaidām izmantots!)
-    - signUpStamp: num - laiks, kad lietotājs taisīja kontu (no epoch)
-    - teams: list<num> - lietotāja komandas, kur num ir Team ID (šo tehniski varētu izņemt ārā, un ļaut Team lādēt visus Users)
-    - notifications: map<num, obj> - num ir id un obj ir abstracts datu tips (DataHolder)
+# Papildus API informācija: <br>
 
-Abām datubāses shēmām arī piemīt 
-    - workspace: map<num, obj> - kur num ir id un obj ir abstracts datu tips (DataHolder)
-    
 Lai vieglāk saprastu nākamo sekciju, šie ir shortcuts, ko izmantošu:
 - Api ("/apiVārds/?"), kur ? ir nākamas sekcijas "klausītājs"
   - "/?" - ģenerāla descripcija
