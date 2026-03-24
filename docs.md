@@ -35,8 +35,8 @@ kļūdu labošana vai ziņošana.
 # Lietotāja ceļvedis: <br>
 Ja configurē jaunu projektu <br>
 Ir jātaisa jauns .env file, kur jābūt: <br>
-AWS_ACCESS_KEY= atslēga <br>
-AWS_SECRET_KEY= atslēga <br>
+AWS_ACCESS_KEY= jūsu DynamoDB access atslēga <br>
+AWS_SECRET_KEY= jūsu DynamoDB secret atslēga <br>
 JWT_SECRET= random liels strings <br>
 JWT_EXPIRATION=3600000 <br>
 JWT_REFRESH_EXPIRATION=86400000 <br>
