@@ -1,3 +1,23 @@
+Problēmas izpēte un analīze:
+Šī projekta atrisinātā problēma ir diezgan vienkārša: kalendāra/plānošanas lietotnes komandām ir vai nu dārgas, vai arī tās 
+nenodrošina funkcijas, kuras es vēlos. Tāpēc, kad strādāju ar komandu, plānošanai parasti izmantojam tikai WhatsApp vai Discord, kas 
+laika gaitā var kļūt apgrūtinoši. Tāpēc šis projekts ir tieši tas risinājums, ko esmu meklējis komandas projektiem.
+Domājot par idejām šim projektam, es konsultējos ar dažiem projektu vadītājiem par to, ko viņi vēlētos šādā lietotnē.
+
+Programmatūras prasību specifikācija:
+Lai es būtu apmierināts ar šo projektu, man bija nepieciešamas tikai 3 lietas:
+- Vienkārša komandas izveide.
+- Vienkārša uzdevumu pārvaldība/uzdevumu piešķiršana.
+- Minimālistisks kalendāra dizains ar papildu iestatījumiem, ja nepieciešams.
+
+Programmatūras projektējums:
+Lai izveidotu šo lietotni, es nolēmu izmantot Springboot (Java) backend un HeroUI (TypeScript) frontent, jo man ir liela pieredze
+ar abiem frameworkiem. Sākotnēji es gribēju izmantot Rust backend, bet vairāku iemeslu dēļ nolēmu to nedarīt.
+![]()
+
+
+
+
 Ģenerāla informācija: <br>
 Orbital ir kalendārs kadāi komandai vai organizācijai <br>
 Katrs lietotājs var pievienoties komandai, un arī taisīt kopējus workspaces <br>
