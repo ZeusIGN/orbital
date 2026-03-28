@@ -32,8 +32,8 @@ public class TeamRepository extends Repository<Team> {
     }
 
     public Team createTeam(String name, User owner) {
-        var team = new Team(nextID(), name);
-        team.addMember(owner, team.getRole("manager"));
+        var team = new Team(nextID(), owner.id(), name);
+        team.addMember(owner, team.getRole("default"));
         loadToStorage(team.id(), team);
         saveToDB(team);
         return team;

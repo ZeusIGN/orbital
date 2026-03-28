@@ -38,8 +38,8 @@ public record DateEvent(
         var id = data.getInteger("id");
         var title = data.getString("title");
         var description = data.getString("description");
-        var setDate = data.containsKey("setDate") ? data.getNumber("setDate") : null;
-        var dueDate = data.containsKey("dueDate") ? data.getNumber("dueDate") : null;
+        var setDate = data.containsKey("setDate") ? data.getLong("setDate") : null;
+        var dueDate = data.containsKey("dueDate") ? data.getLong("dueDate") : null;
         var attendeesHolder = data.getCompound("attendees");
         var attendees = new HashSet<Long>();
         for (var key : attendeesHolder.toMap().keySet()) {

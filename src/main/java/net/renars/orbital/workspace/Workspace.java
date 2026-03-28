@@ -1,9 +1,11 @@
 package net.renars.orbital.workspace;
 
 import lombok.Getter;
+import net.renars.orbital.Orbital;
 import net.renars.orbital.data.DataHolder;
 import net.renars.orbital.utils.Serializable;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.UUID;
@@ -47,6 +49,15 @@ public class Workspace implements Serializable {
 
     public HashMap<Integer, DateEvent> getEvents() {
         return new HashMap<>(events);
+    }
+
+    public HashMap<Integer, DateEvent> getEvents(int month, int year) {
+        return events.entrySet().stream().filter(entry -> {
+            var event = entry.getValue();
+            if (event.setDate() == null) return true;
+            var date = new Date(event.setDate().longValue());
+            return date.getMonth() == month && date.getYear() + 1900 == year;
+        }).collect(HashMap::new, (map, entry) -> map.put(entry.getKey(), entry.getValue()), HashMap::putAll);
     }
 
     @Override

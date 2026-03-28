@@ -23,6 +23,7 @@ public abstract class Repository<V extends Entity> {
     private final Map<Long, V> storage = new HashMap<>();
     // scheme, kas nosaka, kā entītijas tiek saglabātas un ielādētas no DB --Renars
     private final RepoScheme<V> scheme;
+    long highestID = 0;
     final DynamoDbClient client;
 
     public Repository(RepoScheme<V> scheme, DynamoDbClient dbClient) {
@@ -84,7 +85,7 @@ public abstract class Repository<V extends Entity> {
 
     // atgriež Optional, lai izvairītos no null pointer exceptioniem --Renars
     public Optional<V> get(long key) {
-        return Optional.of(storage.get(key));
+        return Optional.ofNullable(storage.get(key));
     }
 
     public void delete(long key) {

@@ -36,7 +36,8 @@ public class WorkspaceController implements Controller {
         var name = request.name.trim();
         if (name.isBlank()) return badRequest("Workspace name cannot be blank");
         // arbitrary limits, lai neviens neizveido 9999 workspaces un neapgrūtina serveri --Renars
-        if (user.get().workspaces().size() >= 16) return badRequest("Max workspace size reached! | Max 16 workspaces per user");
+        if (user.get().workspaces().size() >= 16)
+            return badRequest("Max workspace size reached! | Max 16 workspaces per user");
         var teamID = request.teamID;
         var workspace = new Workspace(UUID.randomUUID(), name);
         if (teamID != null) {
@@ -72,8 +73,11 @@ public class WorkspaceController implements Controller {
         return ok("Created");
     }
 
-    @GetMapping("/{id}/events")
-    public ResponseEntity<Events> getEvents(@PathVariable String id) {
+    @PostMapping("/{id}/events")
+    public ResponseEntity<Events> getEvents(
+            @PathVariable String id,
+            @RequestBody RequestEvents request
+    ) {
         var user = getAuthUser();
         if (user.isEmpty()) return badRequest();
         UUID workspaceId;
@@ -82,7 +86,9 @@ public class WorkspaceController implements Controller {
         } catch (Exception e) {
             return badRequest();
         }
-        var events = user.get().workspaceByID(workspaceId, userRepository, teamRepository).map(Workspace::getEvents).orElse(null);
+        var events = user.get().workspaceByID(workspaceId, userRepository, teamRepository)
+                .map((workspace) -> workspace.getEvents(request.month, request.year))
+                .orElse(null);
         if (events == null) return ResponseEntity.ok(new Events(new HashMap<>()));
         return ResponseEntity.ok(new Events(events));
     }
@@ -112,13 +118,26 @@ public class WorkspaceController implements Controller {
         return ok("Updated");
     }
 
+    @GetMapping("/{id}/info")
+    public ResponseEntity<WorkspaceInfo> info(
+            @PathVariable String id
+    ) {
+        var user = getAuthUser();
+        if (user.isEmpty()) return badRequest();
+        var workspaceId = UUID.fromString(id);
+        var workspaceOpt = user.get().workspaceByID(workspaceId, userRepository, teamRepository);
+        if (workspaceOpt.isEmpty()) return badRequest();
+        var workspace = workspaceOpt.get();
+        return ResponseEntity.ok(new WorkspaceInfo(workspace.getName()));
+    }
+
     public record UpdateEvent(
-        int id,
-        String title,
-        String description,
-        @Nullable Long setDate,
-        @Nullable Long dateDue,
-        Set<Long> attendees
+            int id,
+            String title,
+            String description,
+            @Nullable Long setDate,
+            @Nullable Long dateDue,
+            Set<Long> attendees
     ) {
     }
 
@@ -130,5 +149,17 @@ public class WorkspaceController implements Controller {
     public record CreateWorkspaceRequest(
             String name,
             @Nullable Long teamID
-    ) { }
+    ) {
+    }
+
+    public record WorkspaceInfo(
+            String name
+    ) {
+    }
+
+    public record RequestEvents(
+            int month,
+            int year
+    ) {
+    }
 }
