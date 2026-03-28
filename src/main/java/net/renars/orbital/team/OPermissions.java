@@ -13,6 +13,7 @@ public class OPermissions {
     public static final Permission MANAGE_TEAM = new Permission("manage_team");
     public static final Permission MANAGE_MEMBERS = new Permission("manage_members");
     public static final Permission MANAGE_PERMISSIONS = new Permission("manage_permissions").markAdminOnly();
+    public static final Permission EDIT_WORKSPACES = new Permission("edit_workspaces");
     public static final Permission ADMIN = new Permission("admin").markOwnerOnly();
 
     public static Set<Permission> all() {

@@ -9,7 +9,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
-public interface WorkspaceHolder {
+public interface WorkspaceHolder<T extends Workspace> {
     // primāri Team, bet varbūt kaut kad būs arī cits veids, kas varētu saturēt workspaces, tāpēc šī metode ir šeit --Renars
     Set<Workspace> combinedWorkspaces(UserRepository userRepository, TeamRepository teamRepository);
 
@@ -27,15 +27,40 @@ public interface WorkspaceHolder {
         dataHolder.putCompound("workspaces", local);
     }
 
-    default Set<Workspace> deserializeWorkspaces(DataHolder holder) {
-        var workspaces = new HashSet<Workspace>();
+    T create(String ID, String name);
+
+    default Set<T> deserializeWorkspaces(DataHolder holder) {
+        var workspaces = new HashSet<T>();
         if (!holder.containsKey("workspaces")) return workspaces;
         var workspacesHolder = holder.getCompound("workspaces");
         for (var entry : workspacesHolder.toMap().entrySet()) {
             var workspaceHolder = entry.getValue().m();
-            workspaces.add(Workspace.deserialize(new DataHolder(workspaceHolder)));
+            workspaces.add(deserialize(new DataHolder(workspaceHolder)));
         }
         return workspaces;
+    }
+
+    default T deserialize(DataHolder data) {
+        var id = data.getString("id");
+        var name = data.getString("name");
+        var workspace = create(id, name);
+        workspace.deserializeExtra(data);
+        var eventsHolder = data.getCompound("events");
+        for (var entry : eventsHolder.toMap().entrySet()) {
+            var eventData = DataHolder.from(entry.getValue().m());
+            var event = DateEvent.deserialize(eventData);
+            workspace.addEvent(event);
+        }
+        return workspace;
+    }
+
+    default Optional<Workspace> workspaceByID(String id, UserRepository userRepository, TeamRepository teamRepository) {
+        try {
+            var uuid = UUID.fromString(id);
+            return workspaceByID(uuid, userRepository, teamRepository);
+        } catch (IllegalArgumentException e) {
+            return Optional.empty();
+        }
     }
 
     default Optional<Workspace> workspaceByID(UUID id, UserRepository userRepository, TeamRepository teamRepository) {

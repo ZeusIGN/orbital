@@ -250,9 +250,9 @@ public class TeamController implements Controller {
         if (!team.hasPermission(user.get(), OPermissions.MANAGE_PERMISSIONS))
             return badRequest("You do not have permission to create roles!");
         if (team.roleExists(request.name)) return badRequest("Role already exists");
-        team.addRole(user.get(), request.name, new Permissions(request.permissions));
+        var added = team.addRole(user.get(), request.name, new Permissions(request.permissions));
         teamRepository.saveToDB(team);
-        return ok("Role created!");
+        return added ? ok("Role created!") : badRequest("Duplicate role name!");
     }
 
     @PutMapping("/{teamID}/roles/{roleName}")

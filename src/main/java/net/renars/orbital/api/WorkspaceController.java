@@ -3,11 +3,14 @@ package net.renars.orbital.api;
 import jakarta.annotation.Nullable;
 import net.renars.orbital.services.TeamRepository;
 import net.renars.orbital.services.UserRepository;
+import net.renars.orbital.team.OPermissions;
 import net.renars.orbital.workspace.DateEvent;
-import net.renars.orbital.workspace.Workspace;
+import net.renars.orbital.workspace.TeamWorkspace;
+import net.renars.orbital.workspace.UserWorkspace;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.UUID;
@@ -39,17 +42,66 @@ public class WorkspaceController implements Controller {
         if (user.get().workspaces().size() >= 16)
             return badRequest("Max workspace size reached! | Max 16 workspaces per user");
         var teamID = request.teamID;
-        var workspace = new Workspace(UUID.randomUUID(), name);
         if (teamID != null) {
             var team = teamRepository.byID(teamID);
             if (team.isEmpty()) return badRequest("Team not found");
             if (!team.get().isTeamMember(user.get())) return badRequest("You are not a member of this team");
-            team.get().addWorkspace(workspace);
+            team.get().addWorkspace(new TeamWorkspace(UUID.randomUUID().toString(), name, team.get().id()));
             teamRepository.saveToDB(team.get());
             return ok("Team Workspace created!");
         }
-        user.get().addWorkspace(workspace);
+        user.get().addWorkspace(new UserWorkspace(UUID.randomUUID().toString(), name));
         return ok("User Workspace created!");
+    }
+
+    @PostMapping("/{id}/edit")
+    public ResponseEntity<String> addRoleToWorkspace(
+            @PathVariable String id,
+            @RequestBody RoleRequest request
+    ) {
+        var user = getAuthUser();
+        if (user.isEmpty()) return badRequest("Unauthorized");
+        var workspaceOpt = user.get().workspaceByID(id, userRepository, teamRepository);
+        if (workspaceOpt.isEmpty()) return badRequest("Workspace not found");
+        var workspace = workspaceOpt.get();
+        if (!(workspace instanceof TeamWorkspace teamWorkspace)) return badRequest("Only team workspaces can be edited");
+        var team = teamWorkspace.getTeam(teamRepository);
+        if (!workspace.canAccess(user.get())) return badRequest("You don't have access to this workspace");
+        if (!team.hasPermission(user.get(), OPermissions.EDIT_WORKSPACES)) return badRequest("You do not have permission to edit this workspace");
+        teamWorkspace.addAllowedRole(request.roleName);
+        return ok("Workspace updated!");
+    }
+
+    @DeleteMapping("/{id}/edit")
+    public ResponseEntity<String> removeRoleFromWorkspace(
+            @PathVariable String id,
+            @RequestBody RoleRequest request
+    ) {
+        var user = getAuthUser();
+        if (user.isEmpty()) return badRequest("Unauthorized");
+        var workspaceOpt = user.get().workspaceByID(id, userRepository, teamRepository);
+        if (workspaceOpt.isEmpty()) return badRequest("Workspace not found");
+        var workspace = workspaceOpt.get();
+        if (!(workspace instanceof TeamWorkspace teamWorkspace)) return badRequest("Only team workspaces can be edited");
+        var team = teamWorkspace.getTeam(teamRepository);
+        if (!workspace.canAccess(user.get())) return badRequest("You don't have access to this workspace");
+        if (!team.hasPermission(user.get(), OPermissions.EDIT_WORKSPACES)) return badRequest("You do not have permission to edit this workspace");
+        teamWorkspace.removeAllowedRole(request.roleName);
+        return ok("Workspace updated!");
+    }
+
+    @GetMapping("/{id}/roles")
+    public ResponseEntity<Collection<String>> getWorkspaceRoles(
+            @PathVariable String id
+    ) {
+        var user = getAuthUser();
+        if (user.isEmpty()) return badRequest();
+        var workspaceOpt = user.get().workspaceByID(id, userRepository, teamRepository);
+        if (workspaceOpt.isEmpty()) return badRequest();
+        var workspace = workspaceOpt.get();
+        if (!(workspace instanceof TeamWorkspace teamWorkspace)) return badRequest();
+        if (!workspace.canAccess(user.get())) return badRequest();
+        return ok(teamWorkspace.getAllowedRoles());
     }
 
     @GetMapping("/{id}/createEvent")
@@ -58,15 +110,10 @@ public class WorkspaceController implements Controller {
     ) {
         var user = getAuthUser();
         if (user.isEmpty()) return badRequest("Unauthorized");
-        UUID workspaceId;
-        try {
-            workspaceId = UUID.fromString(id);
-        } catch (Exception e) {
-            return badRequest("Invalid workspace ID");
-        }
-        var workspaceOpt = user.get().workspaceByID(workspaceId, userRepository, teamRepository);
+        var workspaceOpt = user.get().workspaceByID(id, userRepository, teamRepository);
         if (workspaceOpt.isEmpty()) return badRequest("Workspace not found");
         var workspace = workspaceOpt.get();
+        if (!workspace.canAccess(user.get())) return badRequest();
         workspace.createEvent();
         userRepository.saveToDB(user.get());
         user.get().getActiveTeams(teamRepository).forEach(teamRepository::saveToDB);
@@ -80,14 +127,11 @@ public class WorkspaceController implements Controller {
     ) {
         var user = getAuthUser();
         if (user.isEmpty()) return badRequest();
-        UUID workspaceId;
-        try {
-            workspaceId = UUID.fromString(id);
-        } catch (Exception e) {
-            return badRequest();
-        }
-        var events = user.get().workspaceByID(workspaceId, userRepository, teamRepository)
-                .map((workspace) -> workspace.getEvents(request.month, request.year))
+        var workspaceOpt = user.get().workspaceByID(id, userRepository, teamRepository);
+        if (workspaceOpt.isEmpty()) return badRequest();
+        var workspace = workspaceOpt.get();
+        if (!workspace.canAccess(user.get())) return badRequest();
+        var events = workspaceOpt.map((w) -> w.getEvents(request.month, request.year))
                 .orElse(null);
         if (events == null) return ResponseEntity.ok(new Events(new HashMap<>()));
         return ResponseEntity.ok(new Events(events));
@@ -101,15 +145,10 @@ public class WorkspaceController implements Controller {
         // TODO šis ir ļoti suboptimal --Renars
         var user = getAuthUser();
         if (user.isEmpty()) return badRequest("Unauthorized");
-        UUID workspaceId;
-        try {
-            workspaceId = UUID.fromString(id);
-        } catch (Exception e) {
-            return badRequest("Invalid workspace ID");
-        }
-        var workspaceOpt = user.get().workspaceByID(workspaceId, userRepository, teamRepository);
+        var workspaceOpt = user.get().workspaceByID(id, userRepository, teamRepository);
         if (workspaceOpt.isEmpty()) return badRequest("Workspace not found");
         var workspace = workspaceOpt.get();
+        if (!workspace.canAccess(user.get())) return badRequest("You do not have permission to edit this workspace");
         var event = new DateEvent(request.id, request.title, request.description, request.setDate, request.dateDue, request.attendees, true);
         workspace.updateEvent(event);
         // TODO pārveidot uz functional interface, lai izvairītos no šī --Renars
@@ -124,11 +163,22 @@ public class WorkspaceController implements Controller {
     ) {
         var user = getAuthUser();
         if (user.isEmpty()) return badRequest();
-        var workspaceId = UUID.fromString(id);
-        var workspaceOpt = user.get().workspaceByID(workspaceId, userRepository, teamRepository);
+        var workspaceOpt = user.get().workspaceByID(id, userRepository, teamRepository);
         if (workspaceOpt.isEmpty()) return badRequest();
         var workspace = workspaceOpt.get();
-        return ResponseEntity.ok(new WorkspaceInfo(workspace.getName()));
+        if (!workspace.canAccess(user.get())) return badRequest();
+        var teamId = -1L;
+        var canEdit = false;
+        if (workspace instanceof TeamWorkspace teamWorkspace) {
+            teamId = teamWorkspace.teamID;
+            var team = teamWorkspace.getTeam(teamRepository);
+            canEdit = teamWorkspace.canAccess(user.get()) && team.hasPermission(user.get(), OPermissions.EDIT_WORKSPACES);
+        }
+        return ResponseEntity.ok(new WorkspaceInfo(
+                workspace.getName(),
+                teamId,
+                canEdit
+        ));
     }
 
     public record UpdateEvent(
@@ -152,8 +202,15 @@ public class WorkspaceController implements Controller {
     ) {
     }
 
+    public record RoleRequest(
+            String roleName
+    ) {
+    }
+
     public record WorkspaceInfo(
-            String name
+            String name,
+            long teamId,
+            boolean canEdit
     ) {
     }
 

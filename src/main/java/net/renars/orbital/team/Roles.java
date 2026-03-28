@@ -14,8 +14,10 @@ public class Roles implements Serializable {
         return this;
     }
 
-    public void addRole(Team.Role role) {
+    public boolean addRole(Team.Role role) {
+        if (roles.containsKey(role.name())) return false;
         roles.register(role.name(), role);
+        return true;
     }
 
     public void forceRole(Team.Role role) {

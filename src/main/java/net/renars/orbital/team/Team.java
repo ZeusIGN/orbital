@@ -10,6 +10,7 @@ import net.renars.orbital.services.UserRepository;
 import net.renars.orbital.user.User;
 import net.renars.orbital.utils.Result;
 import net.renars.orbital.utils.Serializable;
+import net.renars.orbital.workspace.TeamWorkspace;
 import net.renars.orbital.workspace.Workspace;
 import net.renars.orbital.workspace.WorkspaceHolder;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -17,14 +18,14 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class Team implements Entity, WorkspaceHolder {
+public class Team implements Entity, WorkspaceHolder<TeamWorkspace> {
     @Getter
     private final long id;
     @Getter
     private final long ownerID;
     private final HashMap<Long, Member> members = new HashMap<>();
     private final Set<Long> invitedUsers = new HashSet<>();
-    private final Set<Workspace> workspaces = new HashSet<>();
+    private final Set<TeamWorkspace> workspaces = new HashSet<>();
     private final Roles roles = new Roles()
             .withDefault(new Role("default", new Permissions(), 0));
     private final Role DUMMY_ROLE = new Role("DUMMY", new Permissions(), 100);
@@ -68,9 +69,9 @@ public class Team implements Entity, WorkspaceHolder {
         return roles.getRole(name) != null;
     }
 
-    public void addRole(User modifier, String name, Permissions permissions) {
+    public boolean addRole(User modifier, String name, Permissions permissions) {
         var modifierRole = getRoleOf(modifier);
-        roles.addRole(new Role(name, permissions, modifierRole.priority + 1));
+        return roles.addRole(new Role(name, permissions, modifierRole.priority + 1));
     }
 
     public void removeRole(String name) {
@@ -86,6 +87,7 @@ public class Team implements Entity, WorkspaceHolder {
                                 member.additionalInfo()
                         )
                 ));
+        workspaces.forEach(workspace -> workspace.removeAllowedRole(name));
     }
 
     public Result<String> modifyRolePriority(User modifier, String name, int newPriority) {
@@ -253,7 +255,7 @@ public class Team implements Entity, WorkspaceHolder {
 
     public void loadAdditional(DataHolder data) {
         var workspacesData = deserializeWorkspaces(data);
-        if (workspacesData != null) workspaces.addAll(workspacesData);
+        if (workspacesData != null) addWorkspaces(workspacesData);
         var rolesData = data.getCompound("roles");
         if (rolesData != null) roles.deserialize(rolesData);
     }
@@ -268,8 +270,22 @@ public class Team implements Entity, WorkspaceHolder {
         return new HashSet<>(workspaces);
     }
 
-    public void addWorkspace(Workspace workspace) {
+    @Override
+    public TeamWorkspace create(String workspaceID, String name) {
+        return new TeamWorkspace(workspaceID, name, this.id());
+    }
+
+    public void addWorkspace(TeamWorkspace workspace) {
         workspaces.add(workspace);
+        workspace.setupPredicate((user) -> {
+            if (isAdmin(user)) return true;
+            var role = getRoleOf(user);
+            return workspace.isRoleAllowed(role.name());
+        });
+    }
+
+    public void addWorkspaces(Collection<TeamWorkspace> workspaces) {
+        workspaces.forEach(this::addWorkspace);
     }
 
     public boolean isInvited(User user) {

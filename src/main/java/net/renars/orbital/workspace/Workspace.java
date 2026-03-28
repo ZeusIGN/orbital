@@ -1,8 +1,8 @@
 package net.renars.orbital.workspace;
 
 import lombok.Getter;
-import net.renars.orbital.Orbital;
 import net.renars.orbital.data.DataHolder;
+import net.renars.orbital.user.User;
 import net.renars.orbital.utils.Serializable;
 
 import java.util.Date;
@@ -13,7 +13,7 @@ import java.util.UUID;
 /**
  * Datu glabātuve un organizācija, kas satur kalendāra notikumus un citas lietas --Renars
  */
-public class Workspace implements Serializable {
+public abstract class Workspace implements Serializable {
     @Getter
     private final UUID id;
     @Getter
@@ -28,6 +28,10 @@ public class Workspace implements Serializable {
     public Workspace(UUID id, String name) {
         this.id = id;
         this.name = name;
+    }
+
+    public boolean canAccess(User user) {
+        return true;
     }
 
     public int nextEventID() {
@@ -73,16 +77,7 @@ public class Workspace implements Serializable {
         return holder;
     }
 
-    public static Workspace deserialize(DataHolder data) {
-        var id = data.getString("id");
-        var name = data.getString("name");
-        var workspace = new Workspace(id, name);
-        var eventsHolder = data.getCompound("events");
-        for (var entry : eventsHolder.toMap().entrySet()) {
-            var eventData = DataHolder.from(entry.getValue().m());
-            var event = DateEvent.deserialize(eventData);
-            workspace.addEvent(event);
-        }
-        return workspace;
+    public void deserializeExtra(DataHolder holder) {
+
     }
 }

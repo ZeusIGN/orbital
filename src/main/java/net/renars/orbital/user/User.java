@@ -8,6 +8,7 @@ import net.renars.orbital.services.TeamRepository;
 import net.renars.orbital.services.UserRepository;
 import net.renars.orbital.team.Team;
 import net.renars.orbital.utils.Unique;
+import net.renars.orbital.workspace.UserWorkspace;
 import net.renars.orbital.workspace.Workspace;
 import net.renars.orbital.workspace.WorkspaceHolder;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -18,7 +19,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class User implements Entity, WorkspaceHolder {
+public class User implements Entity, WorkspaceHolder<UserWorkspace> {
     @Unique
     private final long id;
     @Getter
@@ -107,12 +108,17 @@ public class User implements Entity, WorkspaceHolder {
     public Set<Workspace> combinedWorkspaces(UserRepository userRepository, TeamRepository teamRepository) {
         var fullSet = new HashSet<>(workspaces);
         getActiveTeams(teamRepository).forEach(team -> fullSet.addAll(team.combinedWorkspaces(userRepository, teamRepository)));
-        return fullSet;
+        return fullSet.stream().filter(workspace -> workspace.canAccess(this)).collect(Collectors.toSet());
     }
 
     @Override
     public Set<Workspace> workspaces() {
         return new HashSet<>(workspaces);
+    }
+
+    @Override
+    public UserWorkspace create(String workspaceID, String name) {
+        return new UserWorkspace(workspaceID, name);
     }
 
     public enum WebRole {
