@@ -136,17 +136,8 @@ public class Team implements Entity, WorkspaceHolder<TeamWorkspace> {
                 .collect(Collectors.toList());
     }
 
-    public List<Member> members() {
-        return new ArrayList<>(
-                members.values()
-                        .stream()
-                        .map(member -> new Member(
-                                member.username(),
-                                member.role(),
-                                member.permissions(this),
-                                member.additionalInfo()
-                        )).toList()
-        );
+    public HashMap<Long, Member> members() {
+        return new HashMap<>(members);
     }
 
     public void addMember(User user, Member details) {

@@ -5,6 +5,8 @@ import net.renars.orbital.data.DataHolder;
 import net.renars.orbital.data.Entity;
 import net.renars.orbital.utils.RepoScheme;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.KeyType;
 import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
 
@@ -59,6 +61,7 @@ public abstract class Repository<V extends Entity> {
             }
             var value = entity.value();
             loadToStorage(value.id(), value);
+            if (value.id() > highestID) highestID = value.id();
         }
     }
 
@@ -90,6 +93,11 @@ public abstract class Repository<V extends Entity> {
 
     public void delete(long key) {
         storage.remove(key);
+        var req = DeleteItemRequest.builder()
+                .tableName(scheme.tableName())
+                .key(Map.of("id", AttributeValue.builder().n(key + "").build()))
+                .build();
+        client.deleteItem(req);
     }
 
     public boolean containsKey(long key) {
@@ -113,6 +121,6 @@ public abstract class Repository<V extends Entity> {
     // ja es vēlāk izveidošu multi-server, šo būs jāizstrādā no jauna
     // --Renars
     public long nextID() {
-        return storage.size();
+        return ++highestID;
     }
 }

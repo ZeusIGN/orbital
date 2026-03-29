@@ -113,6 +113,9 @@ public class WorkspaceController implements Controller {
         if (workspaceOpt.isEmpty()) return badRequest("Workspace not found");
         var workspace = workspaceOpt.get();
         if (!workspace.canAccess(user.get())) return badRequest();
+        var teamWorkspace = workspace instanceof TeamWorkspace ? (TeamWorkspace) workspace : null;
+        var team = teamWorkspace != null ? teamWorkspace.getTeam(teamRepository) : null;
+        if (teamWorkspace != null && !team.hasPermission(user.get(), OPermissions.EDIT_CARDS)) return badRequest("You do not have permission to create events in this workspace");
         workspace.createEvent();
         workspace.save(teamRepository, userRepository);
         return ok("Created");
@@ -129,9 +132,13 @@ public class WorkspaceController implements Controller {
         if (workspaceOpt.isEmpty()) return badRequest();
         var workspace = workspaceOpt.get();
         if (!workspace.canAccess(user.get())) return badRequest();
-        var events = workspaceOpt.map((w) -> w.getEvents(request.month, request.year))
-                .orElse(null);
-        if (events == null) return ResponseEntity.ok(new Events(new HashMap<>()));
+        var hasPerms = workspace instanceof TeamWorkspace teamWorkspace && teamWorkspace.getTeam(teamRepository).hasPermission(user.get(), OPermissions.EDIT_CARDS);
+        var events = workspaceOpt.map((w) ->
+                        w.getEvents(request.month, request.year).values()
+                                .stream().filter((event) -> hasPerms || event.isVisibleTo(user.get()))
+                                .collect(Collectors.toMap(DateEvent::id, event -> event, (a, _) -> a, HashMap::new))
+                )
+                .orElse(new HashMap<>());
         return ResponseEntity.ok(new Events(events));
     }
 
@@ -146,14 +153,19 @@ public class WorkspaceController implements Controller {
         if (workspaceOpt.isEmpty()) return badRequest("Workspace not found");
         var workspace = workspaceOpt.get();
         if (!workspace.canAccess(user.get())) return badRequest("You do not have permission to edit this workspace");
+        var teamWorkspace = workspace instanceof TeamWorkspace space ? space : null;
+        var team = teamWorkspace != null ? teamWorkspace.getTeam(teamRepository) : null;
+        var hasEditPerms = teamWorkspace != null && team.hasPermission(user.get(), OPermissions.EDIT_CARDS);
+        var prevEvent = workspace.getEvent(request.id);
+        if (prevEvent == null) return badRequest("Event not found");
         var event = new DateEvent(
-                request.id,
-                request.title,
-                request.description,
+                prevEvent.id(),
+                hasEditPerms ? request.title : prevEvent.title(),
+                hasEditPerms ? request.description : prevEvent.description(),
                 request.setDate,
-                request.dateDue,
-                request.attendees,
-                request.label,
+                hasEditPerms ? request.dateDue : prevEvent.dateDue(),
+                hasEditPerms ? request.attendees : prevEvent.attendees(),
+                hasEditPerms ? request.label : prevEvent.label(),
                 true
         );
         workspace.updateEvent(event);
@@ -218,15 +230,21 @@ public class WorkspaceController implements Controller {
         if (!workspace.canAccess(user.get())) return badRequest();
         var teamId = -1L;
         var canEdit = false;
+        var teamName = "";
+        var canEditCards = true;
         if (workspace instanceof TeamWorkspace teamWorkspace) {
             teamId = teamWorkspace.teamID;
             var team = teamWorkspace.getTeam(teamRepository);
             canEdit = teamWorkspace.canAccess(user.get()) && team.hasPermission(user.get(), OPermissions.EDIT_WORKSPACES);
+            teamName = team.getName();
+            canEditCards = teamWorkspace.canAccess(user.get()) && team.hasPermission(user.get(), OPermissions.EDIT_CARDS);
         }
         return ResponseEntity.ok(new WorkspaceInfo(
                 workspace.getName(),
                 teamId,
-                canEdit
+                canEdit,
+                teamName,
+                canEditCards
         ));
     }
 
@@ -260,7 +278,9 @@ public class WorkspaceController implements Controller {
     public record WorkspaceInfo(
             String name,
             long teamId,
-            boolean canEdit
+            boolean canEdit,
+            String teamName,
+            boolean canEditCards
     ) {
     }
 

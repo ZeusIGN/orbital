@@ -103,14 +103,14 @@ public class TeamController implements Controller {
     public ResponseEntity<String> deleteTeam(
             @PathVariable long teamID
     ) {
-        //var user = getAuthUser();
-        //if (user.isEmpty()) return badRequest();
-        //var teamOpt = getTeam(user, teamID);
-        //if (teamOpt.isEmpty()) return badRequest();
-        //var team = teamOpt.get();
-        //if (!team.isOwner(user.get()))
-        //    return badRequest("You do not have permission to delete this team!");
-        //teamRepository.delete(team.id());
+        var user = getAuthUser();
+        if (user.isEmpty()) return badRequest();
+        var teamOpt = getTeam(user, teamID);
+        if (teamOpt.isEmpty()) return badRequest();
+        var team = teamOpt.get();
+        if (!team.isOwner(user.get()))
+            return badRequest("You do not have permission to delete this team!");
+        teamRepository.delete(team.id());
         return ok("a");
     }
 
@@ -193,14 +193,18 @@ public class TeamController implements Controller {
         if (teamOpt.isEmpty()) return badRequest();
         var team = teamOpt.get();
         return ResponseEntity.ok(
-                team.members()
-                        .stream()
-                        .map(member -> new ResultMember(
-                                member.username(),
-                                member.role(),
-                                member.permissions(team).toMap(),
-                                member.additionalInfo()
-                        ))
+                team.members().entrySet().stream()
+                        .map((entry) -> {
+                            var member = entry.getValue();
+                            var id = entry.getKey();
+                            return new ResultMember(
+                                    id,
+                                    member.username(),
+                                    member.role(),
+                                    member.permissions(team).toMap(),
+                                    member.additionalInfo()
+                            );
+                        })
                         .collect(Collectors.toList())
         );
     }
@@ -372,6 +376,7 @@ public class TeamController implements Controller {
     }
 
     public record ResultMember(
+            long userId,
             String username,
             String role,
             HashMap<String, Boolean> permissions,

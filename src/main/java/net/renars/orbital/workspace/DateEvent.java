@@ -1,6 +1,7 @@
 package net.renars.orbital.workspace;
 
 import net.renars.orbital.data.DataHolder;
+import net.renars.orbital.user.User;
 import net.renars.orbital.utils.Serializable;
 
 import java.util.HashSet;
@@ -16,6 +17,10 @@ public record DateEvent(
         String label, // var but "" --Renars
         boolean editable
 ) implements Serializable {
+    public boolean isVisibleTo(User user) {
+        return attendees.isEmpty() || attendees.contains(user.id());
+    }
+
     @Override
     public DataHolder serialize() {
         var holder = new DataHolder();

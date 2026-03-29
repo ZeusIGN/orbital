@@ -43,7 +43,16 @@ public abstract class Workspace implements Serializable {
     }
 
     public void createEvent() {
-        var event = new DateEvent(nextEventID(), "New Event", "", null, null, new HashSet<>(), null, true);
+        var event = new DateEvent(
+                nextEventID(),
+                "New Event",
+                "",
+                null,
+                null,
+                new HashSet<>(),
+                "",
+                true
+        );
         addEvent(event);
     }
 
@@ -70,6 +79,10 @@ public abstract class Workspace implements Serializable {
 
     public void removeLabel(int id) {
         label.remove(id);
+    }
+
+    public DateEvent getEvent(int id) {
+        return events.get(id);
     }
 
     public void updateEvent(DateEvent event) {

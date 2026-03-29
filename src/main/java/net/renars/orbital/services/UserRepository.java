@@ -55,12 +55,8 @@ public class UserRepository extends Repository<User> {
         loadToStorage(user.id(), user);
     }
 
-    public void removeUser(long id) {
-        delete(id);
-    }
-
     public void removeUser(User user) {
-        removeUser(user.id());
+        delete(user.id());
     }
 
     public Optional<User> byUsername(@Unique @NonNull String username) {
