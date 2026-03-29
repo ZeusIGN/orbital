@@ -56,7 +56,7 @@ public abstract class Workspace implements Serializable {
     }
 
     public void addLabel(DateEvent.Label label) {
-        var id = getHighestLabelID();
+        var id = getHighestLabelID() + 1;
         this.label.put(id, label.withId(id));
     }
 
