@@ -131,8 +131,8 @@ public class TeamController implements Controller {
         if (memberOpt.isEmpty()) return badRequest("User not found");
         var member = memberOpt.get();
         if (!team.isTeamMember(member)) return badRequest("User is not a member of this team");
-        if (team.getRoleOf(user.get()).priority() <= team.getRole(request.role()).priority())
-            return badRequest("You cannot assign a role that is higher or equal to your current role!");
+        if (!team.isOwner(user.get()) && team.getRoleOf(user.get()).priority() >= team.getRole(request.role()).priority())
+            return badRequest("You cannot assign a role that is lower or equal to your current role!");
         team.setRole(member, request.role());
         teamRepository.saveToDB(team);
         return ok("Member updated!");

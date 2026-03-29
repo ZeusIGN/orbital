@@ -10,10 +10,8 @@ import net.renars.orbital.workspace.UserWorkspace;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Workspace (publiskais) API.
@@ -50,7 +48,8 @@ public class WorkspaceController implements Controller {
             teamRepository.saveToDB(team.get());
             return ok("Team Workspace created!");
         }
-        user.get().addWorkspace(new UserWorkspace(UUID.randomUUID().toString(), name));
+        user.get().addWorkspace(new UserWorkspace(UUID.randomUUID().toString(), name, user.get().id()));
+        userRepository.saveToDB(user.get());
         return ok("User Workspace created!");
     }
 
@@ -115,8 +114,7 @@ public class WorkspaceController implements Controller {
         var workspace = workspaceOpt.get();
         if (!workspace.canAccess(user.get())) return badRequest();
         workspace.createEvent();
-        userRepository.saveToDB(user.get());
-        user.get().getActiveTeams(teamRepository).forEach(teamRepository::saveToDB);
+        workspace.save(teamRepository, userRepository);
         return ok("Created");
     }
 
@@ -142,19 +140,70 @@ public class WorkspaceController implements Controller {
             @PathVariable String id,
             @RequestBody UpdateEvent request
     ) {
-        // TODO šis ir ļoti suboptimal --Renars
         var user = getAuthUser();
         if (user.isEmpty()) return badRequest("Unauthorized");
         var workspaceOpt = user.get().workspaceByID(id, userRepository, teamRepository);
         if (workspaceOpt.isEmpty()) return badRequest("Workspace not found");
         var workspace = workspaceOpt.get();
         if (!workspace.canAccess(user.get())) return badRequest("You do not have permission to edit this workspace");
-        var event = new DateEvent(request.id, request.title, request.description, request.setDate, request.dateDue, request.attendees, true);
+        var event = new DateEvent(
+                request.id,
+                request.title,
+                request.description,
+                request.setDate,
+                request.dateDue,
+                request.attendees,
+                request.label,
+                true
+        );
         workspace.updateEvent(event);
-        // TODO pārveidot uz functional interface, lai izvairītos no šī --Renars
-        userRepository.saveToDB(user.get());
-        user.get().getActiveTeams(teamRepository).forEach(teamRepository::saveToDB);
+        workspace.save(teamRepository, userRepository);
         return ok("Updated");
+    }
+
+    @GetMapping("/{id}/labels")
+    public ResponseEntity<Set<DateEvent.Label>> getLabels(
+            @PathVariable String id
+    ) {
+        var user = getAuthUser();
+        if (user.isEmpty()) return badRequest();
+        var workspaceOpt = user.get().workspaceByID(id, userRepository, teamRepository);
+        if (workspaceOpt.isEmpty()) return badRequest();
+        var workspace = workspaceOpt.get();
+        if (!workspace.canAccess(user.get())) return badRequest();
+        return ResponseEntity.ok(workspace.getLabels());
+    }
+
+    @PostMapping("/{id}/labels")
+    public ResponseEntity<String> addLabel(
+            @PathVariable String id,
+            @RequestBody DateEvent.Label label
+    ) {
+        var user = getAuthUser();
+        if (user.isEmpty()) return badRequest();
+        var workspaceOpt = user.get().workspaceByID(id, userRepository, teamRepository);
+        if (workspaceOpt.isEmpty()) return badRequest();
+        var workspace = workspaceOpt.get();
+        if (!workspace.canAccess(user.get())) return badRequest();
+        workspace.addLabel(label);
+        workspace.save(teamRepository, userRepository);
+        return ok("Label added");
+    }
+
+    @DeleteMapping("/{id}/labels")
+    public ResponseEntity<String> removeLabel(
+            @PathVariable String id,
+            @RequestBody int labelID
+    ) {
+        var user = getAuthUser();
+        if (user.isEmpty()) return badRequest();
+        var workspaceOpt = user.get().workspaceByID(id, userRepository, teamRepository);
+        if (workspaceOpt.isEmpty()) return badRequest();
+        var workspace = workspaceOpt.get();
+        if (!workspace.canAccess(user.get())) return badRequest();
+        workspace.removeLabel(labelID);
+        workspace.save(teamRepository, userRepository);
+        return ok("Label removed");
     }
 
     @GetMapping("/{id}/info")
@@ -187,7 +236,8 @@ public class WorkspaceController implements Controller {
             String description,
             @Nullable Long setDate,
             @Nullable Long dateDue,
-            Set<Long> attendees
+            Set<Long> attendees,
+            String label
     ) {
     }
 

@@ -2,13 +2,12 @@ package net.renars.orbital.workspace;
 
 import lombok.Getter;
 import net.renars.orbital.data.DataHolder;
+import net.renars.orbital.services.TeamRepository;
+import net.renars.orbital.services.UserRepository;
 import net.renars.orbital.user.User;
 import net.renars.orbital.utils.Serializable;
 
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Datu glabātuve un organizācija, kas satur kalendāra notikumus un citas lietas --Renars
@@ -18,7 +17,8 @@ public abstract class Workspace implements Serializable {
     private final UUID id;
     @Getter
     private String name;
-    private HashMap<Integer, DateEvent> events = new HashMap<>();
+    private final HashMap<Integer, DateEvent> events = new HashMap<>();
+    private final HashMap<Integer, DateEvent.Label> label = new HashMap<>();
 
     public Workspace(String id, String name) {
         this.id = UUID.fromString(id);
@@ -43,8 +43,33 @@ public abstract class Workspace implements Serializable {
     }
 
     public void createEvent() {
-        var event = new DateEvent(nextEventID(), "New Event", "", null, null, new HashSet<>(), true);
+        var event = new DateEvent(nextEventID(), "New Event", "", null, null, new HashSet<>(), null, true);
         addEvent(event);
+    }
+
+    public Set<DateEvent.Label> getLabels() {
+        return new HashSet<>(label.values());
+    }
+
+    public DateEvent.Label getLabel(int id) {
+        return label.get(id);
+    }
+
+    public void addLabel(DateEvent.Label label) {
+        var id = getHighestLabelID();
+        this.label.put(id, label.withId(id));
+    }
+
+    public void addRawLabel(int id, DateEvent.Label label) {
+        this.label.put(id, label);
+    }
+
+    public int getHighestLabelID() {
+        return label.keySet().stream().mapToInt((e) -> e).max().orElse(0);
+    }
+
+    public void removeLabel(int id) {
+        label.remove(id);
     }
 
     public void updateEvent(DateEvent event) {
@@ -73,6 +98,11 @@ public abstract class Workspace implements Serializable {
         for (var entry : events.entrySet()) {
             eventsHolder.putCompound(entry.getKey() + "", entry.getValue().serialize());
         }
+        var labelsHolder = new DataHolder();
+        for (var entry : label.entrySet()) {
+            labelsHolder.putCompound(entry.getKey().hashCode() + "", entry.getValue().serialize());
+        }
+        holder.putCompound("labels", labelsHolder);
         holder.putCompound("events", eventsHolder);
         return holder;
     }
@@ -80,4 +110,6 @@ public abstract class Workspace implements Serializable {
     public void deserializeExtra(DataHolder holder) {
 
     }
+
+    public abstract void save(TeamRepository teamRepository, UserRepository userRepository);
 }

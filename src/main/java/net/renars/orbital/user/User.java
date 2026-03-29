@@ -118,7 +118,7 @@ public class User implements Entity, WorkspaceHolder<UserWorkspace> {
 
     @Override
     public UserWorkspace create(String workspaceID, String name) {
-        return new UserWorkspace(workspaceID, name);
+        return new UserWorkspace(workspaceID, name, id());
     }
 
     public enum WebRole {

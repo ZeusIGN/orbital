@@ -2,6 +2,7 @@ package net.renars.orbital.workspace;
 
 import net.renars.orbital.data.DataHolder;
 import net.renars.orbital.services.TeamRepository;
+import net.renars.orbital.services.UserRepository;
 import net.renars.orbital.team.Team;
 import net.renars.orbital.user.User;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -69,5 +70,11 @@ public class TeamWorkspace extends Workspace {
     public void deserializeExtra(DataHolder holder) {
         var roles = holder.getList("allowedRoles", AttributeValue::s);
         if (roles != null) setAllowedRoles(Set.copyOf(roles));
+    }
+
+    @Override
+    public void save(TeamRepository teamRepository, UserRepository userRepository) {
+        var team = getTeam(teamRepository);
+        teamRepository.saveToDB(team);
     }
 }

@@ -13,6 +13,7 @@ public record DateEvent(
         Number setDate,
         Number dateDue,
         Set<Long> attendees,
+        String label, // var but "" --Renars
         boolean editable
 ) implements Serializable {
     @Override
@@ -30,6 +31,7 @@ public record DateEvent(
             i++;
         }
         holder.putCompound("attendees", attendeesHolder);
+        holder.putString("label", label);
         holder.putBoolean("editable", editable);
         return holder;
     }
@@ -41,11 +43,47 @@ public record DateEvent(
         var setDate = data.containsKey("setDate") ? data.getLong("setDate") : null;
         var dueDate = data.containsKey("dueDate") ? data.getLong("dueDate") : null;
         var attendeesHolder = data.getCompound("attendees");
+        var label = data.containsKey("label") ? data.getString("label") : "";
         var attendees = new HashSet<Long>();
         for (var key : attendeesHolder.toMap().keySet()) {
             attendees.add(attendeesHolder.getLong(key));
         }
         var editable = data.getBoolean("editable");
-        return new DateEvent(id, title, description, setDate, dueDate, attendees, editable);
+        return new DateEvent(
+                id,
+                title,
+                description,
+                setDate,
+                dueDate,
+                attendees,
+                label,
+                editable
+        );
+    }
+
+    public record Label(
+            int id,
+            String name,
+            String color
+    ) implements Serializable {
+        public Label withId(int id) {
+            return new Label(id, name, color);
+        }
+
+        @Override
+        public DataHolder serialize() {
+            var holder = new DataHolder();
+            holder.putNumber("id", id);
+            holder.putString("name", name);
+            holder.putString("color", color);
+            return holder;
+        }
+
+        public static Label deserialize(DataHolder data) {
+            var id = data.getInteger("id", -1);
+            var name = data.getString("name");
+            var color = data.getString("color");
+            return new Label(id, name, color);
+        }
     }
 }

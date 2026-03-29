@@ -45,6 +45,13 @@ public interface WorkspaceHolder<T extends Workspace> {
         var name = data.getString("name");
         var workspace = create(id, name);
         workspace.deserializeExtra(data);
+        var labelsHolder = data.containsKey("labels") ? data.getCompound("labels") : new DataHolder();
+        for (var entry : labelsHolder.toMap().entrySet()) {
+            var labelData = DataHolder.from(entry.getValue().m());
+            var label = DateEvent.Label.deserialize(labelData);
+            if (label.id() != -1) workspace.addRawLabel(label.id(), label);
+            else workspace.addLabel(label);
+        }
         var eventsHolder = data.getCompound("events");
         for (var entry : eventsHolder.toMap().entrySet()) {
             var eventData = DataHolder.from(entry.getValue().m());
